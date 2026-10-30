@@ -20,8 +20,13 @@ defaults:
     shell: pwsh
 
 jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
+
   build:
     name: Executable (${{ matrix.target }})
+    needs: changes
+    if: needs.changes.outputs.runtime != 'false'
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -52,9 +57,9 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           uv run --no-sync python -c "import os; from fdry import __version__; assert os.environ['GITHUB_REF_NAME'] == f'v{__version__}', 'Tag must match the package version'"
-      - run: uv run --no-sync python -m ruff check src tests
-      - run: uv run --no-sync python -m ruff format --check src tests
-      - run: uv run --no-sync python -m mypy src
+      - run: uv run --no-sync python -m ruff check src tests .github/scripts
+      - run: uv run --no-sync python -m ruff format --check src tests .github/scripts
+      - run: uv run --no-sync python -m mypy src .github/scripts
       - run: uv run --no-sync python -m pytest -q -m "not binary"
       - run: uv run --no-sync pip-audit --skip-editable
       - run: uv run --no-sync python -m PyInstaller --noconfirm --clean --log-level WARN (Join-Path packaging fdry.spec)
@@ -90,14 +95,22 @@ jobs:
   required:
     name: Required executables
     if: always()
-    needs: build
+    needs: [changes, build]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Require both platform builds and tests
         env:
           RESULT: ${{ needs.build.result }}
+          CHANGES: ${{ needs.changes.result }}
+          RUNTIME: ${{ needs.changes.outputs.runtime }}
         run: |
+          if ($env:CHANGES -ne 'success') { throw 'Change detection failed.' }
+          if ($env:RUNTIME -eq 'false') {
+            if ($env:RESULT -ne 'skipped') { throw 'Unexpected executable job result.' }
+            Write-Output 'Documentation-only change; executable builds not needed.'
+            exit 0
+          }
           if ($env:RESULT -ne 'success') { throw 'Executable validation failed.' }
 
   release:

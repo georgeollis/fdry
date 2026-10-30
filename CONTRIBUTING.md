@@ -12,9 +12,9 @@ CI uses uv 0.13.6. From a checkout:
 
 ```powershell
 uv sync --locked --all-extras --python 3.13
-uv run --no-sync python -m ruff check src tests
-uv run --no-sync python -m ruff format --check src tests
-uv run --no-sync python -m mypy src
+uv run --no-sync python -m ruff check src tests .github\scripts
+uv run --no-sync python -m ruff format --check src tests .github\scripts
+uv run --no-sync python -m mypy src .github\scripts
 uv run --no-sync python -m pytest -q -m "not binary"
 uv run --no-sync python -m build --no-isolation
 uv run --no-sync pip-audit --skip-editable
@@ -56,8 +56,15 @@ offline test as a live pass.
 ## Pull requests and repository checks
 
 The required gates are `Required CI`, `Required executables`, `CodeQL analysis`,
-`Dependency review`, and `Documentation site`. Aggregated gates fail when any prerequisite fails or is
-cancelled; do not make a required workflow silently skip paths.
+`Dependency review`, and `Documentation site`. Documentation-only changes (root
+Markdown, `docs/`, `overrides/`, `mkdocs.yml`, or the PR template) run the strict
+documentation build and security checks without the runtime test matrix,
+package installation, dependency audits, or native executable builds.
+The required CI and executable gates still report success after confirming
+that only those documentation paths changed. Mixed or unrecognized changes,
+workflow changes, release tags, manual runs, and unavailable diffs use full
+validation. Aggregated gates fail when detection or a required job fails or
+is cancelled; do not silently skip required workflows with trigger-level filters.
 Keep action references pinned to full commit SHAs. Dependabot proposes action
 and uv dependency updates; review their changelogs and test results.
 
