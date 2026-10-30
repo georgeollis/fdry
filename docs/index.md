@@ -1,13 +1,6 @@
-# fdry
-
-**An independent CLI for Microsoft Foundry.** Manage agents, model deployments,
-projects, connections, toolboxes, datasets, evaluations, and fine-tuning with
-consistent command groups and structured output.
-
-This is an open-source community project, not an official Microsoft product.
-The initial release remains alpha: offline testing and build hardening do not
-establish live Azure compatibility. See [release readiness](releasing.md) for
-the assurance boundary and supported platforms.
+---
+title: fdry - Your Foundry. Your terminal.
+---
 
 ## Install
 
@@ -22,9 +15,9 @@ fdry --version
 
 The package is not published to PyPI yet. Windows x64 and Linux x64 standalone
 builds bundle Python, so users of those builds do not need a Python installation.
-When releases are published, use the
-[GitHub releases page](https://github.com/georgeollis/fdry/releases) and verify
-checksums/provenance before running downloaded files.
+Download binaries, Python wheel/source archives, and checksums from the
+[v0.1.0 pre-release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0).
+Verify checksums/provenance before running downloaded files.
 See [platform requirements and verification](releasing.md#consumer-verification).
 
 ## Configure a project
@@ -68,3 +61,9 @@ command. JSON output is the default.
 Requests can create resources, modify data, and incur Azure charges.
 There is no dry-run mode. Keep credentials and private prompts outside source
 control, and review outputs before sharing them.
+
+!!! note "Independent by design. Transparent about trust."
+    fdry is an open-source community CLI for Microsoft Foundry, not an official
+    Microsoft product. The initial release remains alpha. Offline testing and
+    build hardening do not establish live Azure compatibility; native binaries
+    are unsigned. See [release readiness](releasing.md) for the assurance boundary.

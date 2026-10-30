@@ -54,12 +54,18 @@ live Azure validation remains outstanding. See [SECURITY.md](SECURITY.md),
 
 ## Install
 
+**[v0.1.0 pre-release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0)**
+provides Windows/Linux executables, Python wheel/source archives, checksums, and
+build-provenance attestations. It is an initial, offline-validated alpha, not a
+stable production release.
+
 ### Windows executable
 
 The standalone x64 build bundles Python and its dependencies; users do **not**
 need to install Python. It is a portable executable, not an MSI installer.
-Once a GitHub release is published, download `fdry-windows-x64.exe` and
-`SHA256SUMS` from that release. Compare the hash, then rename the executable:
+Download `fdry-windows-x64.exe` and `SHA256SUMS` from the
+[pre-release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0).
+Compare the hash, then rename the executable:
 
 ```powershell
 Get-FileHash .\fdry-windows-x64.exe -Algorithm SHA256
@@ -72,7 +78,7 @@ The executable has the same commands and configuration as the Python package.
 Azure CLI is not bundled: install it separately for `az login`, or use supported
 environment/workload/managed identity credentials.
 
-No executable release has been published yet. Builds are currently unsigned;
+Pre-release builds are currently unsigned;
 code signing and installer/package-manager distribution are not configured.
 
 ### From source
@@ -94,7 +100,7 @@ The Linux x86-64 build bundles Python and dependencies. It is built on Ubuntu
 are not supplied. The executable needs a writable/executable temporary directory
 for PyInstaller extraction and a working system CA trust store.
 
-Once a release is published, download `fdry-linux-x64` and `SHA256SUMS`.
+Download `fdry-linux-x64` and `SHA256SUMS` from the pre-release.
 Check its SHA-256 hash against the matching entry before running it, then grant
 execute permission and rename it to `fdry` if desired. Linux users can use
 `sha256sum` to verify the hash and `chmod +x` to grant execute permission.
