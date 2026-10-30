@@ -1,0 +1,11 @@
+{% extends "main.html" %}
+
+{% block htmltitle %}<title>Page not found - {{ config.site_name }}</title>{% endblock %}
+
+{% block content %}
+<main class="col-12 fd-article mx-auto" id="main-content" tabindex="-1">
+  <h1>Page not found</h1>
+  <p>The requested documentation page does not exist. Check the URL or use search to find a command.</p>
+  <p><a href="{{ nav.homepage.url|url }}">Return to documentation</a></p>
+</main>
+{% endblock %}
