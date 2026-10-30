@@ -13,6 +13,12 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -27,18 +33,23 @@ dependencies = [
 
 [project.urls]
 Repository = "https://github.com/georgeollis/fdry"
-Documentation = "https://github.com/georgeollis/fdry/blob/main/docs/cli.md"
+Documentation = "https://georgeollis.github.io/fdry/"
 Issues = "https://github.com/georgeollis/fdry/issues"
 
 [project.optional-dependencies]
 binary = ["pyinstaller>=6.16,<7"]
+docs = ["mkdocs>=1.6,<2"]
 dev = [
+  "build>=1.2,<2",
+  "hatchling>=1.27,<2",
+  "pip-audit>=2.9,<3",
   "pytest>=8,<10",
   "ruff>=0.12",
   "mypy>=1.15",
   "types-PyYAML>=6",
   "requests>=2.32,<3",
   "httpx2>=2,<3",
+  "twine>=6,<8",
 ]
 
 [project.scripts]

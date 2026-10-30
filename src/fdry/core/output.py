@@ -15,17 +15,18 @@ SECRET_KEYS = {
     "authorization",
     "headers",
     "credentials",
-    "api_key",
     "apikey",
     "key",
     "token",
-    "access_token",
+    "accesstoken",
+    "refreshtoken",
+    "sastoken",
+    "primarykey",
+    "secondarykey",
     "password",
     "secret",
-    "client_secret",
-    "connection_string",
+    "clientsecret",
     "connectionstring",
-    "environment_variables",
     "environmentvariables",
 }
 
@@ -37,7 +38,11 @@ def plain(value: Any) -> Any:
         return plain(value.as_dict())
     if isinstance(value, Mapping):
         return {
-            str(key): "[REDACTED]" if str(key).lower() in SECRET_KEYS else plain(item)
+            str(key): (
+                "[REDACTED]"
+                if str(key).lower().replace("_", "").replace("-", "") in SECRET_KEYS
+                else plain(item)
+            )
             for key, item in value.items()
         }
     if isinstance(value, (list, tuple)):
@@ -52,13 +57,16 @@ def plain(value: Any) -> Any:
 
 
 def emit(value: Any, output: str) -> None:
-    data = plain(value)
-    if output == "yaml":
-        click.echo(yaml.safe_dump(data, sort_keys=False).rstrip())
-    elif output == "table":
-        _table(data)
-    else:
-        click.echo(json.dumps(data, indent=2, ensure_ascii=False, allow_nan=False))
+    try:
+        data = plain(value)
+        if output == "yaml":
+            click.echo(yaml.safe_dump(data, sort_keys=False).rstrip())
+        elif output == "table":
+            _table(data)
+        else:
+            click.echo(json.dumps(data, indent=2, ensure_ascii=False, allow_nan=False))
+    except (TypeError, ValueError, yaml.YAMLError) as exc:
+        raise click.ClickException("Cannot serialize the service response.") from exc
 
 
 def _table(data: Any) -> None:
@@ -70,6 +78,9 @@ def _table(data: Any) -> None:
         click.echo(json.dumps(data, indent=2, ensure_ascii=False))
         return
     columns = list(dict.fromkeys(key for row in rows for key in row))
+    if not columns:
+        click.echo(json.dumps(data))
+        return
     rendered = [[json.dumps(row.get(key), ensure_ascii=False) for key in columns] for row in rows]
     widths = [
         max(len(key), *(len(row[index]) for row in rendered)) for index, key in enumerate(columns)

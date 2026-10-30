@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Hashable, Mapping
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -12,9 +12,32 @@ import click
 import yaml
 
 
+class DocumentLoader(yaml.SafeLoader):
+    def construct_mapping(self, node: yaml.Node, deep: bool = False) -> dict[Hashable, Any]:
+        if not isinstance(node, yaml.MappingNode):
+            raise yaml.constructor.ConstructorError(
+                None, None, "Expected an object.", node.start_mark
+            )
+        keys: set[str] = set()
+        for key_node, _ in node.value:
+            if key_node.tag == "tag:yaml.org,2002:merge":
+                continue
+            key = self.construct_object(key_node, deep=deep)
+            if not isinstance(key, str):
+                raise yaml.constructor.ConstructorError(
+                    None, None, "Object keys must be strings.", key_node.start_mark
+                )
+            if key in keys:
+                raise yaml.constructor.ConstructorError(
+                    None, None, f"Duplicate object key: {key}.", key_node.start_mark
+                )
+            keys.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
 def load_document(path: Path) -> dict[str, Any]:
     try:
-        value: object = yaml.safe_load(path.read_text(encoding="utf-8"))
+        value: object = yaml.load(path.read_text(encoding="utf-8"), Loader=DocumentLoader)
     except (OSError, UnicodeError, yaml.YAMLError) as exc:
         raise click.BadParameter(f"Cannot read {path}: {exc}", param_hint="--file") from exc
     if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):

@@ -496,7 +496,18 @@ def test_service_error_has_nonzero_exit(runner: CliRunner, project_client: Magic
     assert "Traceback" not in result.output
 
 
-@pytest.mark.parametrize("content", ["- not-an-object", "date: 2026-10-25", "number: .nan"])
+@pytest.mark.parametrize(
+    "content",
+    [
+        "- not-an-object",
+        "date: 2026-10-25",
+        "number: .nan",
+        "tools: []\ntools: []",
+        "tools: [{type: web_search, type: mcp}]",
+        '{"tools": [], "tools": [{"type": "web_search"}]}',
+        "tools: [{1: value}]",
+    ],
+)
 def test_invalid_document_never_calls_sdk(
     runner: CliRunner, project_client: MagicMock, tmp_path: Path, content: str
 ) -> None:
@@ -505,6 +516,27 @@ def test_invalid_document_never_calls_sdk(
     result = runner.invoke(cli, ["toolbox", "create", "-n", "tools", "--file", str(path)])
     assert result.exit_code == 2, result.output
     project_client.toolboxes.create_version.assert_not_called()
+
+
+def test_yaml_merge_can_override_inherited_properties(
+    runner: CliRunner, project_client: MagicMock, tmp_path: Path
+) -> None:
+    path = tmp_path / "tools.yaml"
+    path.write_text(
+        "tools:\n  - &base {type: web_search, name: first}\n  - <<: *base\n    name: second\n"
+    )
+    project_client.toolboxes.create_version.return_value = {"version": "1"}
+    result = runner.invoke(cli, ["toolbox", "create", "-n", "tools", "--file", str(path)])
+    assert result.exit_code == 0, result.output
+    project_client.toolboxes.create_version.assert_called_once_with(
+        "tools",
+        {
+            "tools": [
+                {"type": "web_search", "name": "first"},
+                {"type": "web_search", "name": "second"},
+            ]
+        },
+    )
 
 
 @pytest.mark.parametrize(
@@ -555,6 +587,32 @@ def test_output_redaction(runner: CliRunner, project_client: MagicMock, output: 
     assert result.exit_code == 0, result.output
     assert "never-print" not in result.output
     assert "[REDACTED]" in result.output
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["clientSecret", "accessToken", "refresh_token", "sas-token", "primaryKey", "secondaryKey"],
+)
+def test_output_redacts_credential_key_variants(key: str) -> None:
+    assert plain({"nested": [{key: "never-print"}]}) == {"nested": [{key: "[REDACTED]"}]}
+
+
+@pytest.mark.parametrize("response", [{"value": float("nan")}, {"value": object()}])
+def test_unserializable_response_is_actionable(
+    runner: CliRunner, project_client: MagicMock, response: dict
+) -> None:
+    project_client.agents.get.return_value = response
+    result = runner.invoke(cli, ["agent", "show", "-n", "agent"])
+    assert result.exit_code == 1
+    assert "Cannot serialize the service response" in result.output
+    assert isinstance(result.exception, SystemExit)
+
+
+def test_empty_table_object_is_visible(runner: CliRunner, project_client: MagicMock) -> None:
+    project_client.agents.get.return_value = {}
+    result = runner.invoke(cli, ["-o", "table", "agent", "show", "-n", "agent"])
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == "{}"
 
 
 def test_unsupported_output_is_not_silently_stringified() -> None:

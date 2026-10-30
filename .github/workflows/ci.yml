@@ -2,29 +2,110 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+  merge_group:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python }})
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python: ["3.10", "3.13"]
+        python: ["3.10", "3.13", "3.15"]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python }}
-          cache: pip
-      - run: python -m pip install -e ".[dev]"
-      - run: python -m ruff check src tests
-      - run: python -m ruff format --check src tests
-      - run: python -m mypy src
-      - run: python -m pytest -q
-      - run: python -m pip wheel --no-deps . --wheel-dir dist
-      - run: python -m fdry --help
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.6"
+      - run: uv sync --locked --extra dev
+      - run: uv run --no-sync python -m ruff check src tests
+      - run: uv run --no-sync python -m ruff format --check src tests
+      - run: uv run --no-sync python -m mypy src
+      - run: uv run --no-sync python -m pytest -q -m "not binary"
+      - run: uv run --no-sync python -m fdry --help
+
+  package:
+    name: Package installation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.6"
+      - run: uv sync --locked --extra dev
+      - run: uv run --no-sync python -m build --no-isolation
+      - run: uv run --no-sync python -m twine check --strict (Get-ChildItem dist -File | ForEach-Object FullName)
+      - name: Install wheel outside the checkout
+        run: |
+          $requirements = Join-Path dist runtime-requirements.txt
+          uv export --locked --no-dev --no-emit-project --output-file $requirements
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $environment = Join-Path $env:RUNNER_TEMP wheel-smoke
+          uv venv $environment
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $python = Join-Path $environment bin/python
+          uv pip sync --python $python $requirements
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $wheel = (Get-ChildItem dist -Filter '*.whl').FullName
+          uv pip install --python $python --no-deps $wheel
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Set-Location $env:RUNNER_TEMP
+          & $python -I -m fdry --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $python -I -m fdry --version
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.6"
+      - run: uv sync --locked --all-extras
+      - run: uv run --no-sync pip-audit --skip-editable
+
+  required:
+    name: Required CI
+    if: always()
+    needs: [check, package, audit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every quality gate
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python -c "import json, os; results = json.loads(os.environ['RESULTS']); assert all(job['result'] == 'success' for job in results.values()), results"
