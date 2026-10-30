@@ -11,7 +11,7 @@ Install Python 3.10 or later and [uv](https://docs.astral.sh/uv/getting-started/
 CI uses uv 0.13.6. From a checkout:
 
 ```powershell
-uv sync --locked --all-extras
+uv sync --locked --all-extras --python 3.13
 uv run --no-sync python -m ruff check src tests
 uv run --no-sync python -m ruff format --check src tests
 uv run --no-sync python -m mypy src
@@ -31,6 +31,10 @@ include the updated lock, and rerun checks. For an intentional dependency
 refresh, use `uv lock --upgrade`, then `uv sync --locked --all-extras`.
 Do not hand-edit hashes or suppress audit findings to make a build green.
 Pip installation is supported for users but does not consume `uv.lock`.
+Audit tooling requires Python 3.11 or later: CI runs it in an isolated Python
+3.13 environment against each target interpreter's installed packages. This
+keeps audit-tool dependencies out of the Python 3.10 development environment
+without skipping its dependency audit.
 
 ## Test boundaries
 

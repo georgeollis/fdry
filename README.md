@@ -275,7 +275,7 @@ Private endpoints require execution from a network with access and correct DNS.
 ## Development and architecture
 
 ```powershell
-uv sync --locked --all-extras
+uv sync --locked --all-extras --python 3.13
 uv run --no-sync python -m pytest -q -m "not binary"
 uv run --no-sync python -m ruff check src tests
 uv run --no-sync python -m ruff format --check src tests

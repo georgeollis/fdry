@@ -39,6 +39,15 @@ jobs:
       - run: uv run --no-sync python -m ruff format --check src tests
       - run: uv run --no-sync python -m mypy src
       - run: uv run --no-sync python -m pytest -q -m "not binary"
+      - name: Audit the target interpreter from isolated tooling
+        shell: pwsh
+        run: |
+          $sitePackages = uv run --no-sync python -c "import sysconfig; print(sysconfig.get_path('purelib'))"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:UV_PROJECT_ENVIRONMENT = Join-Path $env:RUNNER_TEMP dependency-audit
+          uv sync --locked --extra audit --python 3.13
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --no-sync pip-audit --skip-editable --path $sitePackages
       - run: uv run --no-sync python -m fdry --help
 
   package:

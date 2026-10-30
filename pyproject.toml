@@ -37,12 +37,12 @@ Documentation = "https://georgeollis.github.io/fdry/"
 Issues = "https://github.com/georgeollis/fdry/issues"
 
 [project.optional-dependencies]
+audit = ["pip-audit>=2.9,<3; python_version >= '3.11'"]
 binary = ["pyinstaller>=6.16,<7"]
 docs = ["mkdocs>=1.6,<2"]
 dev = [
   "build>=1.2,<2",
   "hatchling>=1.27,<2",
-  "pip-audit>=2.9,<3",
   "pytest>=8,<10",
   "ruff>=0.12",
   "mypy>=1.15",
