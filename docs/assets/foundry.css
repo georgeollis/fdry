@@ -35,7 +35,7 @@ body { font-family: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSyst
 body::before { background: none; }
 body > .container { margin-top: 0; }
 .container { max-width: 1240px; padding-right: 32px; padding-left: 32px; }
-a { text-decoration: none; transition: color .18s ease, border-color .18s ease, background-color .18s ease; }
+a { color: var(--fd-accent); text-decoration: none; transition: color .18s ease, border-color .18s ease, background-color .18s ease; }
 a:hover { color: var(--fd-cyan); }
 ::selection { color: var(--fd-text); background: var(--fd-glow); }
 :focus-visible { outline: 2px solid var(--fd-cyan); outline-offset: 5px; border-radius: 4px; }
