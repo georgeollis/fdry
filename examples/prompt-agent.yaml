@@ -1,0 +1,4 @@
+definition:
+  kind: prompt
+  model: <MODEL_DEPLOYMENT>
+  instructions: You are a helpful assistant. Answer accurately and concisely.

@@ -1,0 +1,4 @@
+{
+  "model": "<BASE_MODEL>",
+  "training_file": "<TRAINING_FILE_ID>"
+}

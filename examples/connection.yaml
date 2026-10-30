@@ -1,0 +1,6 @@
+properties:
+  authType: AAD
+  category: CognitiveSearch
+  target: https://<SEARCH_SERVICE>.search.windows.net
+  metadata:
+    ApiType: Azure

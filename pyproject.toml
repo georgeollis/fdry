@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fdry"
+dynamic = ["version"]
+description = "An independent command-line interface for Microsoft Foundry."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "azure-ai-projects>=2.9.0,<3",
+  "azure-core>=1.38,<2",
+  "azure-identity>=1.25,<2",
+  "azure-mgmt-cognitiveservices>=14.1,<15",
+  "click>=8.1,<9",
+  "openai>=3,<4",
+  "PyYAML>=6,<7",
+]
+
+[project.urls]
+Repository = "https://github.com/georgeollis/fdry"
+Documentation = "https://github.com/georgeollis/fdry/blob/main/docs/cli.md"
+Issues = "https://github.com/georgeollis/fdry/issues"
+
+[project.optional-dependencies]
+binary = ["pyinstaller>=6.16,<7"]
+dev = [
+  "pytest>=8,<10",
+  "ruff>=0.12",
+  "mypy>=1.15",
+  "types-PyYAML>=6",
+  "requests>=2.32,<3",
+  "httpx2>=2,<3",
+]
+
+[project.scripts]
+fdry = "fdry.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fdry"]
+
+[tool.hatch.version]
+path = "src/fdry/__init__.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["binary: requires FDRY_EXE pointing to a built standalone executable"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true

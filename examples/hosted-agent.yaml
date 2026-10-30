@@ -1,0 +1,9 @@
+definition:
+  kind: hosted
+  cpu: "1"
+  memory: 2Gi
+  container_configuration:
+    image: <REGISTRY_HOST>/<IMAGE>:<TAG>
+  protocol_versions:
+    - protocol: responses
+      version: v1

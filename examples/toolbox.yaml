@@ -1,0 +1,4 @@
+description: A toolbox with web search.
+tools:
+  - type: web_search
+    name: web

@@ -1,0 +1,24 @@
+{
+  "name": "exact-match",
+  "data_source_config": {
+    "type": "custom",
+    "item_schema": {
+      "type": "object",
+      "properties": {
+        "prompt": {"type": "string"},
+        "expected": {"type": "string"}
+      },
+      "required": ["prompt", "expected"]
+    },
+    "include_sample_schema": true
+  },
+  "testing_criteria": [
+    {
+      "type": "string_check",
+      "name": "exact-match",
+      "input": "{{sample.output_text}}",
+      "operation": "eq",
+      "reference": "{{item.expected}}"
+    }
+  ]
+}
