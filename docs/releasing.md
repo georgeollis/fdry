@@ -46,7 +46,7 @@ xvfb-run --auto-servernum bash packaging/build-windows.sh
 ```
 
 The script downloads the official Windows Python **3.15.2** x64 installer,
-verifies its SHA-256 digest, and creates an isolated Windows virtual environment.
+verifies its SHA-256 digest, and installs it into the isolated Wine prefix.
 It exports the reviewed `uv.lock`, requires dependency hashes and Windows
 wheels, audits that environment, runs offline source tests, packages the
 Windows PE executable, and runs all executable checks with Windows Python

@@ -17,9 +17,7 @@ wineserver --wait
 
 python="$WINEPREFIX/drive_c/Python315/python.exe"
 wine "$python" -c "import struct, sys; assert sys.platform == 'win32' and struct.calcsize('P') == 8; assert sys.version_info[:3] == (3, 15, 2)"
-environment="$RUNNER_TEMP/windows-venv"
-wine "$python" -m venv "$(winepath -w "$environment")"
-python="$environment/Scripts/python.exe"
+wine "$python" -m pip --version
 
 requirements="$RUNNER_TEMP/windows-requirements.txt"
 uv export --locked --all-extras --no-dev --no-emit-project --output-file "$requirements"
