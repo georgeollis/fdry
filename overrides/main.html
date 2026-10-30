@@ -47,10 +47,9 @@
   {% include "partials/hero.html" %}
   <div class="fd-quickstart">
     <div class="fd-section-intro">
-      <span class="fd-eyebrow">THE FIRST FIVE MINUTES</span>
-      <h2>Less setup.<br> More building.</h2>
-      <p>A familiar CLI. Your own credentials.<br>No new control plane to learn.</p>
-      <a href="{{ 'cli/'|url }}">Read the complete reference <span aria-hidden="true">&rarr;</span></a>
+      <h2>Install and configure</h2>
+      <p>Install the Python package or download an executable, then configure a project endpoint.</p>
+      <a href="{{ 'cli/'|url }}">Configuration reference <span aria-hidden="true">&rarr;</span></a>
     </div>
     <div class="fd-quickstart-content">{{ page.content }}</div>
   </div>
@@ -74,7 +73,7 @@
 
 {% block footer %}
 <div class="container fd-footer">
-  <div><a class="fd-footer-brand" href="{{ nav.homepage.url|url }}">fdry<span>.</span></a><p>Foundry power. Terminal precision.</p><p class="fd-disclaimer">Independent community project. Not an official Microsoft product.</p></div>
+  <div><a class="fd-footer-brand" href="{{ nav.homepage.url|url }}">fdry<span>.</span></a><p>Python 3.10+ / Windows and Linux.</p><p class="fd-disclaimer">Independent community project. Not an official Microsoft product.</p></div>
   <nav aria-label="Footer"><a href="{{ config.repo_url }}">GitHub</a><a href="{{ config.repo_url }}/blob/main/CONTRIBUTING.md">Contribute</a><a href="{{ config.repo_url }}/blob/main/SECURITY.md">Security</a><a href="{{ config.repo_url }}/blob/main/LICENSE">MIT license</a><a href="https://www.mkdocs.org/">Built with MkDocs</a></nav>
 </div>
 {% endblock %}

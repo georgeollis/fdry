@@ -1,9 +1,9 @@
 <section class="fd-hero" aria-labelledby="hero-title">
   <div class="fd-hero-copy">
-    <div class="fd-release-pill"><span class="fd-status-dot" aria-hidden="true"></span> OPEN SOURCE <span aria-hidden="true">/</span> EARLY ACCESS</div>
-    <h1 id="hero-title">Your Foundry.<br> <span>Your terminal.</span></h1>
-    <p class="fd-hero-description">Go from idea to invocation. Agents, models, and the Microsoft Foundry resources behind them&mdash;one expressive command line.</p>
-    <div class="fd-hero-actions"><a class="fd-button fd-button-primary" href="#install">Start building <span aria-hidden="true">&rarr;</span></a><a class="fd-button fd-button-secondary" href="{{ 'cli/'|url }}">Explore the commands <span aria-hidden="true">&nearr;</span></a></div>
+    <a class="fd-release-pill" href="{{ config.repo_url }}/releases/tag/v0.1.0"><span class="fd-status-dot" aria-hidden="true"></span> v0.1.0 <span aria-hidden="true">/</span> PRE-RELEASE</a>
+    <h1 id="hero-title">A CLI for<br> <span>Microsoft Foundry.</span></h1>
+    <p class="fd-hero-description">Create and invoke agents, manage model deployments, and inspect project resources. JSON, YAML, and table output.</p>
+    <div class="fd-hero-actions"><a class="fd-button fd-button-primary" href="#install">Install fdry <span aria-hidden="true">&rarr;</span></a><a class="fd-button fd-button-secondary" href="{{ 'cli/'|url }}">Command reference <span aria-hidden="true">&nearr;</span></a></div>
     <div class="fd-platforms"><span><i class="fa-brands fa-windows" aria-hidden="true"></i> Windows</span><span><i class="fa-brands fa-linux" aria-hidden="true"></i> Linux</span><span>Python 3.10&ndash;3.15</span></div>
   </div>
   <div class="fd-terminal-wrap">
@@ -11,13 +11,13 @@
     <div class="fd-terminal">
       <div class="fd-terminal-title"><span class="fd-window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>fdry &mdash; workspace</span><span class="fd-terminal-shell">bash</span></div>
       <div class="fd-terminal-tabs" role="tablist" aria-label="Example CLI workflows">
-        <button id="tab-discover" type="button" role="tab" aria-selected="true" aria-controls="panel-discover" tabindex="0">01 Discover</button>
-        <button id="tab-invoke" type="button" role="tab" aria-selected="false" aria-controls="panel-invoke" tabindex="-1">02 Invoke</button>
-        <button id="tab-automate" type="button" role="tab" aria-selected="false" aria-controls="panel-automate" tabindex="-1">03 Automate</button>
+        <button id="tab-discover" type="button" role="tab" aria-selected="true" aria-controls="panel-discover" tabindex="0">Agents</button>
+        <button id="tab-invoke" type="button" role="tab" aria-selected="false" aria-controls="panel-invoke" tabindex="-1">Models</button>
+        <button id="tab-automate" type="button" role="tab" aria-selected="false" aria-controls="panel-automate" tabindex="-1">Profiles</button>
       </div>
       <div class="fd-terminal-body">
         <div id="panel-discover" role="tabpanel" aria-labelledby="tab-discover" tabindex="0">
-          <p class="fd-terminal-comment"># Know what is in your project.</p>
+          <p class="fd-terminal-comment"># List agents in the configured project.</p>
           <pre data-no-copy><code><span class="fd-prompt">$</span> <span class="fd-command">fdry</span> agent list</code></pre>
           <pre class="fd-terminal-response" data-no-copy><code>[
   {
@@ -27,7 +27,7 @@
 ]</code></pre>
         </div>
         <div id="panel-invoke" role="tabpanel" aria-labelledby="tab-invoke" tabindex="0" hidden>
-          <p class="fd-terminal-comment"># Put your model to work.</p>
+          <p class="fd-terminal-comment"># Send input to a model deployment.</p>
           <pre data-no-copy><code><span class="fd-prompt">$</span> <span class="fd-command">fdry</span> model invoke \
     --name "&lt;DEPLOYMENT&gt;" \
     --input "Hello"</code></pre>
@@ -37,7 +37,7 @@
 }</code></pre>
         </div>
         <div id="panel-automate" role="tabpanel" aria-labelledby="tab-automate" tabindex="0" hidden>
-          <p class="fd-terminal-comment"># Switch context. Keep it structured.</p>
+          <p class="fd-terminal-comment"># Select a profile and output format.</p>
           <pre data-no-copy><code><span class="fd-prompt">$</span> <span class="fd-command">fdry</span> --profile staging \
     -o json model list</code></pre>
           <pre class="fd-terminal-response" data-no-copy><code>[
@@ -49,17 +49,14 @@
       </div>
       <div class="fd-terminal-status"><span><span class="fd-status-dot" aria-hidden="true"></span> Illustrative responses</span><span>No commands are run</span></div>
     </div>
-    <div class="fd-terminal-caption"><span aria-hidden="true">&gt;_</span> Less clicking. More shipping.</div>
   </div>
 </section>
 
-<div class="fd-principles" aria-label="Project principles"><span>YOUR WORKFLOW, UNBLOCKED</span><span><i class="fa fa-terminal" aria-hidden="true"></i> One consistent interface</span><span><i class="fa fa-code" aria-hidden="true"></i> Structured by default</span><span><i class="fa fa-shield" aria-hidden="true"></i> Your Azure identity</span></div>
-
 <section class="fd-capabilities" aria-labelledby="capabilities-title">
-  <div class="fd-section-heading"><div><span class="fd-eyebrow">A SMALL CLI. A BIG TOOLBOX.</span><h2 id="capabilities-title">Build at the speed of a command.</h2></div><a href="{{ 'cli/'|url }}">All commands <span aria-hidden="true">&rarr;</span></a></div>
+  <div class="fd-section-heading"><h2 id="capabilities-title">Commands and request files</h2><a href="{{ 'cli/'|url }}">Full reference <span aria-hidden="true">&rarr;</span></a></div>
   <div class="fd-card-grid">
-    <a class="fd-card fd-card-featured" href="{{ 'cli/#agents'|url }}"><span class="fd-card-icon" aria-hidden="true"><i class="fa fa-cubes"></i></span><span class="fd-card-kicker">01 / ORCHESTRATE</span><h3>Agents. Without<br>the tab overload.</h3><p>Create versions, inspect your agents, and invoke them from the same place you write code.</p><code>fdry agent invoke</code><span class="fd-card-arrow" aria-hidden="true">&nearr;</span></a>
-    <a class="fd-card" href="{{ 'cli/#models'|url }}"><span class="fd-card-icon" aria-hidden="true"><i class="fa fa-bolt"></i></span><span class="fd-card-kicker">02 / EXPERIMENT</span><h3>Meet your next model.</h3><p>Discover the catalog, manage deployments, and call Responses, chat, or embeddings.</p><code>fdry model catalog</code><span class="fd-card-arrow" aria-hidden="true">&nearr;</span></a>
-    <a class="fd-card" href="{{ 'request-bodies/'|url }}"><span class="fd-card-icon" aria-hidden="true"><i class="fa fa-sliders"></i></span><span class="fd-card-kicker">03 / MAKE IT YOURS</span><h3>Definitions, not guesswork.</h3><p>Start with readable YAML/JSON. Understand every property. Extend with confidence.</p><code>--file agent.local.yaml</code><span class="fd-card-arrow" aria-hidden="true">&nearr;</span></a>
+    <a class="fd-card fd-card-featured" href="{{ 'cli/#agents'|url }}"><span class="fd-card-icon" aria-hidden="true"><i class="fa fa-cubes"></i></span><h3>Agents</h3><p>Create prompt or hosted agent versions, list versions, and invoke agents through the Responses API.</p><code>fdry agent invoke</code><span class="fd-card-arrow" aria-hidden="true">&nearr;</span></a>
+    <a class="fd-card" href="{{ 'cli/#models'|url }}"><span class="fd-card-icon" aria-hidden="true"><i class="fa fa-bolt"></i></span><h3>Models</h3><p>List deployments, browse the catalog, and call Responses, chat, or embeddings APIs.</p><code>fdry model catalog</code><span class="fd-card-arrow" aria-hidden="true">&nearr;</span></a>
+    <a class="fd-card" href="{{ 'request-bodies/'|url }}"><span class="fd-card-icon" aria-hidden="true"><i class="fa fa-sliders"></i></span><h3>Request files</h3><p>Use YAML or JSON for request bodies. The field guide covers example values and how to add properties.</p><code>--file agent.local.yaml</code><span class="fd-card-arrow" aria-hidden="true">&nearr;</span></a>
   </div>
 </section>
