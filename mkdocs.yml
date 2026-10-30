@@ -1,0 +1,30 @@
+site_name: fdry
+site_description: An independent command-line interface for Microsoft Foundry.
+site_url: https://georgeollis.github.io/fdry/
+repo_url: https://github.com/georgeollis/fdry
+repo_name: georgeollis/fdry
+edit_uri: edit/main/docs/
+strict: true
+
+theme:
+  name: mkdocs
+  color_mode: auto
+  user_color_mode_toggle: true
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - tables
+  - fenced_code
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - CLI reference: cli.md
+  - Request files and properties: request-bodies.md
+  - Release readiness: releasing.md
+  - Contributing: https://github.com/georgeollis/fdry/blob/main/CONTRIBUTING.md
+  - Security: https://github.com/georgeollis/fdry/blob/main/SECURITY.md

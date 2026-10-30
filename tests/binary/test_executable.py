@@ -33,6 +33,8 @@ def environment(tmp_path: Path) -> dict[str, str]:
     }
     env["FDRY_CONFIG"] = str(tmp_path / "config.json")
     env["AZURE_TOKEN_CREDENTIALS"] = "EnvironmentCredential"
+    env["HOME"] = str(tmp_path)
+    env["USERPROFILE"] = str(tmp_path)
     if os.name == "nt":
         system_root = Path(os.environ["SystemRoot"])
         env["PATH"] = os.pathsep.join([str(system_root / "System32"), str(system_root)])

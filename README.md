@@ -4,11 +4,20 @@ An independent, open-source Python command-line interface for **Microsoft Foundr
 Built on the Microsoft Foundry Python SDK and Azure management SDK. Not an official
 Microsoft product.
 
+[![CI](https://github.com/georgeollis/fdry/actions/workflows/ci.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/ci.yml)
+[![Executables](https://github.com/georgeollis/fdry/actions/workflows/binary.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/binary.yml)
+[![Documentation](https://github.com/georgeollis/fdry/actions/workflows/pages.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/pages.yml)
+[![Security](https://github.com/georgeollis/fdry/actions/workflows/security.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/security.yml)
+
 **Status:** initial implementation. This is not yet full Foundry portal parity.
 Preview APIs, model availability, quota, and hosted-agent support depend on the
 selected region, subscription, and service rollout.
+Production hardening does not establish live Azure compatibility. See
+[release readiness and support](docs/releasing.md) for gates and remaining limitations.
 
 ## Documentation
+
+The searchable site is **[georgeollis.github.io/fdry](https://georgeollis.github.io/fdry/)**.
 
 [CLI reference](docs/cli.md) covers every command, option, default, accepted
 CLI choice, and configuration value.
@@ -21,6 +30,27 @@ The files in `examples` are AI-assisted templates authored for this project,
 not official Microsoft samples or exports from an Azure environment. They use
 the SDK/API request formats linked in the request-body reference. Replace all
 placeholders before submitting them; service support and permissions still apply.
+
+## Support and repository safeguards
+
+| Distribution | Supported/tested target |
+|--------------|-------------------------|
+| Python package | Windows and Linux; CI tests Python **3.10, 3.13, and 3.15**. Python 3.10+ is required. |
+| Windows executable | x86-64; bundles Python 3.13. No Python installation is needed. |
+| Linux executable | x86-64, built on Ubuntu 22.04; glibc 2.35+ and an executable temporary directory are required. |
+| Other standalone targets | No macOS, ARM64, or Alpine/musl binaries are supplied. |
+
+`main` requires pull requests, passing quality/security/documentation gates,
+resolved conversations, and linear history; force pushes and deletion are blocked.
+Dependencies are locked with hashes, actions are commit-pinned, and CI includes
+audits for every tested interpreter, CodeQL, package-install checks, and both
+standalone builds. Dependabot proposes updates; secret scanning and push
+protection are enabled.
+
+These safeguards do **not** make this a certified stable Azure client.
+No stable/PyPI release or native code signing is configured, and representative
+live Azure validation remains outstanding. See [SECURITY.md](SECURITY.md),
+[CONTRIBUTING.md](CONTRIBUTING.md), and the [release checklist](docs/releasing.md).
 
 ## Install
 
@@ -56,6 +86,24 @@ fdry --help
 
 The package is not yet published to PyPI. Installing from source creates the
 `fdry` executable; `python -m fdry` also works.
+
+### Linux executable
+
+The Linux x86-64 build bundles Python and dependencies. It is built on Ubuntu
+22.04 and targets glibc 2.35 or later. Alpine/musl, ARM64, and macOS binaries
+are not supplied. The executable needs a writable/executable temporary directory
+for PyInstaller extraction and a working system CA trust store.
+
+Once a release is published, download `fdry-linux-x64` and `SHA256SUMS`.
+Check its SHA-256 hash against the matching entry before running it, then grant
+execute permission and rename it to `fdry` if desired. Linux users can use
+`sha256sum` to verify the hash and `chmod +x` to grant execute permission.
+Add its directory to `PATH`, or invoke it by its full path. Azure CLI remains
+a separate installation for interactive authentication.
+
+Release assets are unsigned native executables. Tagged workflows produce GitHub
+build-provenance attestations; these are distinct from Windows Authenticode
+signatures. Verification instructions are in the [release guide](docs/releasing.md).
 
 ## Authenticate and configure
 
@@ -250,13 +298,20 @@ Private endpoints require execution from a network with access and correct DNS.
 ## Development and architecture
 
 ```powershell
-python -m pip install -e ".[dev]"
-python -m pytest -q
-python -m ruff check src tests
-python -m ruff format --check src tests
-python -m mypy src
-python -m pip wheel --no-deps . --wheel-dir dist
+uv sync --locked --all-extras --python 3.13
+uv run --no-sync python -m pytest -q -m "not binary"
+uv run --no-sync python -m ruff check src tests
+uv run --no-sync python -m ruff format --check src tests
+uv run --no-sync python -m mypy src
+uv run --no-sync python -m build --no-isolation
+uv run --no-sync pip-audit --skip-editable
 ```
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first.
+CI pins uv and uses the committed `uv.lock` for platform-specific dependency
+versions and hashes. End-user source installation still supports pip, but pip
+resolves the package's declared dependency ranges rather than consuming this lock.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development and pull-request workflow.
 
 ```text
 src\fdry\
@@ -283,38 +338,41 @@ when a real cross-command domain workflow justifies it.
 
 Tests never create Azure resources. Contract tests exercise the installed Azure
 SDKs against an offline transport; they are not live-service integration tests.
-CI runs on Windows and Linux with Python 3.10 and 3.13. Live Azure validation is
+CI runs on Windows and Linux with Python 3.10, 3.13, and 3.15. Live Azure validation is
 still required before treating a release as production-ready.
 
 Contributions should keep resource behavior explicit, preserve structured output
 and failure exit codes, and include focused behavior or SDK-contract tests.
 Run the commands above before opening a pull request.
 
-### Build and release the Windows executable
+### Build and release standalone executables
 
-Build on Windows with Python 3.13 x64; PyInstaller does not cross-compile.
+Build on the target OS with Python 3.13 x64; PyInstaller does not cross-compile.
+For Windows:
 
 ```powershell
-python -m pip install -e ".[dev,binary]"
-python -m PyInstaller --noconfirm --clean --log-level WARN packaging\fdry.spec
+uv sync --locked --all-extras --python 3.13
+uv run --no-sync python -m PyInstaller --noconfirm --clean --log-level WARN packaging\fdry.spec
 $env:FDRY_EXE = (Resolve-Path dist\fdry.exe).Path
-python -m pytest -q tests\binary
+uv run --no-sync python -m pytest -q tests\binary
 ```
 
-The output is `dist\fdry.exe`. The executable is built from the same entry
+The Windows output is `dist\fdry.exe`; the Linux output is named `fdry` in `dist`.
+Both executables are built from the same entry
 point as the Python package. SDK modules loaded dynamically are included by the
 build specification. Binary checks run from an unrelated directory with Python
 environment overrides removed, no Python executable on the Windows search path,
 and no Azure credentials configured. The default
 test suite skips them unless `FDRY_EXE` is set.
 
-The **Windows executable** GitHub Actions workflow builds and exercises the
-artifact on pull requests affecting binary inputs, on manual dispatch, and on
-`v*` tags. A tag must match the package version, for example `v0.1.0`.
-Tagged builds create a **draft GitHub release** with the Windows x64 executable,
-its SHA-256 checksum, and the MIT license; maintainers review and publish the
-draft separately. Manual runs upload workflow artifacts without creating a release.
-No GitHub release is created by running a local build.
+The **Executables** GitHub Actions workflow builds and exercises both platforms
+on pull requests, pushes to `main`, manual dispatch, and `v*` tags.
+A tag must match the package version, for example `v0.1.0`.
+Tagged builds create a **draft GitHub release** with Windows/Linux x64 executables,
+Python wheel/source distributions, SHA-256 checksums, and the MIT license.
+Maintainers review and publish drafts separately. Pull requests and manual runs
+upload workflow artifacts without creating a release. No release is created by
+a local build. See the [release checklist](docs/releasing.md) before tagging.
 
 ## License
 

@@ -15,6 +15,7 @@ coverage.xml
 htmlcov/
 build/
 dist/
+site/
 .eggs/
 *.whl
 .env

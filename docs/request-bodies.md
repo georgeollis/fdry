@@ -2,7 +2,7 @@
 
 ## Origin and scope
 
-The six files in [`examples`](../examples) are AI-assisted, repository-authored
+The six files in [`examples`](https://github.com/georgeollis/fdry/tree/main/examples) are AI-assisted, repository-authored
 templates created for this CLI. They were not downloaded from Microsoft, exported
 from an Azure environment, or supplied by the Foundry service. Their field names
 follow the SDK/API shapes linked below. They are illustrative, not Microsoft
@@ -21,7 +21,11 @@ does not establish model, region, RBAC, network, or container compatibility.
 ## File format and validation
 
 Every `--file` expects one JSON-compatible object, not an array or scalar.
-Files are UTF-8. YAML is read with `safe_load`; keys must be strings. JSON values
+Files are UTF-8. YAML uses a safe loader; object keys must be strings at every
+level. Duplicate explicit keys are rejected instead of silently overwriting a
+value, including inside nested objects. Standard YAML merge-key inheritance
+can still be overridden by an explicit key.
+JSON values
 are strings, numbers, booleans, null, arrays, and objects. YAML-only values such
 as timestamps and non-finite numbers are rejected if they cannot be serialized
 as strict JSON. Quote CPU quantities and other fields whose schema requires strings.
@@ -42,8 +46,9 @@ Copy-Item examples\prompt-agent.yaml examples\prompt-agent.local.yaml
 fdry agent create --name "<AGENT>" --file examples\prompt-agent.local.yaml
 ```
 
-All commands use service wire keys. Data-plane requests use keys such as
-`container_configuration`; ARM requests use keys such as `authType` and
+All commands use service wire keys. Agent/toolbox requests use keys such as
+`container_configuration`; dataset/index requests use camelCase keys such as
+`dataUri`, `connectionName`, and `indexName`. ARM requests use keys such as `authType` and
 `allowProjectManagement`. Do not replace ARM wire keys with Python attribute names.
 Account/project/model and connection management bodies are sent as JSON bytes,
 preserving their wire names. The agent, toolbox, dataset, and index bodies go
@@ -53,12 +58,12 @@ directly to the corresponding Foundry SDK operation.
 
 | Template | Consumer | Prerequisites |
 |----------|----------|---------------|
-| [`prompt-agent.yaml`](../examples/prompt-agent.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint and a compatible deployed model. |
-| [`hosted-agent.yaml`](../examples/hosted-agent.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint, compatible accessible image, hosted-agent support and permissions. |
-| [`toolbox.yaml`](../examples/toolbox.yaml) | `fdry toolbox create --name <TOOLBOX> --file <PATH>` | Project endpoint and support for the selected tools. |
-| [`connection.yaml`](../examples/connection.yaml) | `fdry connection create --name <CONNECTION> --file <PATH>` | Management settings, existing search service, appropriate permissions. |
-| [`evaluation.json`](../examples/evaluation.json) | `fdry evaluation create --file <PATH>` | Project endpoint and evaluation API support. |
-| [`fine-tuning.json`](../examples/fine-tuning.json) | `fdry fine-tuning create --file <PATH>` | Project endpoint, trainable model, uploaded training file and training permissions. |
+| [`prompt-agent.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/prompt-agent.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint and a compatible deployed model. |
+| [`hosted-agent.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/hosted-agent.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint, compatible accessible image, hosted-agent support and permissions. |
+| [`toolbox.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/toolbox.yaml) | `fdry toolbox create --name <TOOLBOX> --file <PATH>` | Project endpoint and support for the selected tools. |
+| [`connection.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/connection.yaml) | `fdry connection create --name <CONNECTION> --file <PATH>` | Management settings, existing search service, appropriate permissions. |
+| [`evaluation.json`](https://github.com/georgeollis/fdry/blob/main/examples/evaluation.json) | `fdry evaluation create --file <PATH>` | Project endpoint and evaluation API support. |
+| [`fine-tuning.json`](https://github.com/georgeollis/fdry/blob/main/examples/fine-tuning.json) | `fdry fine-tuning create --file <PATH>` | Project endpoint, trainable model, uploaded training file and training permissions. |
 
 The CLI resource name is supplied separately with `--name`; do not assume the
 files name resources for you. Evaluation `name` is a display label; fine-tuning
@@ -193,8 +198,8 @@ and service behavior.
 | Use a new API property absent from the bundled SDK, or change transport behavior | May require dependency/adapter changes and a new package/executable build; a file edit cannot upgrade the SDK or set SDK transport options. |
 
 For contributors changing these boundaries, request parsing/forwarding lives in
-[`core/documents.py`](../src/fdry/core/documents.py); operation-specific validation
-and SDK calls live in [`commands`](../src/fdry/commands).
+[`core/documents.py`](https://github.com/georgeollis/fdry/blob/main/src/fdry/core/documents.py); operation-specific validation
+and SDK calls live in [`commands`](https://github.com/georgeollis/fdry/tree/main/src/fdry/commands).
 Keep example files, this field reference, and focused request-contract tests in
 sync when introducing a newly supported request shape. Do not silently drop a
 property or weaken validation merely to make an unsupported request pass.
@@ -443,22 +448,22 @@ No dataset/index templates are bundled. These operations forward service wire
 objects; consult the selected subtype rather than copying an SDK response with
 read-only fields back into a create request.
 
-For dataset references, `type` is `uri_file` or `uri_folder`; `data_uri` is the
-existing data URI. `connection_name` identifies the storage connection and is
+For dataset references, `type` is `uri_file` or `uri_folder`; `dataUri` is the
+existing data URI. `connectionName` identifies the storage connection and is
 required by the schema when an upload has not already been initialized.
-`is_reference` is a boolean; when true the underlying data is retained on
+`isReference` is a boolean; when true the underlying data is retained on
 dataset deletion. Optional `description` is a string and `tags` a string-to-string
 object. Supply consistent resource names/versions using the CLI options.
 For local content, prefer `dataset upload` rather than manually constructing
 storage/upload state.
 
 For an Azure AI Search index reference, `type` is `AzureSearch`,
-`connection_name` names the project search connection, and `index_name` names
-the existing search index. Optional `description`, `tags`, and `field_mapping`
+`connectionName` names the project search connection, and `indexName` names
+the existing search index. Optional `description`, `tags`, and `fieldMapping`
 configure metadata and field mappings.
-If present, `field_mapping.content_fields` is a required string array;
-`filepath_field`, `title_field`, and `url_field` are optional string field names,
-and `vector_fields` and `metadata_fields` are optional arrays of field names.
+If present, `fieldMapping.contentFields` is a required string array;
+`filepathField`, `titleField`, and `urlField` are optional string field names,
+and `vectorFields` and `metadataFields` are optional arrays of field names.
 This registers a reference; it does not create or populate the underlying index.
 
 Sources: [DatasetVersion](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.datasetversion),
