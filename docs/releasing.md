@@ -3,18 +3,20 @@
 ## Current assurance
 
 The repository is hardened for reviewed changes, locked dependency installation,
-offline contract testing, and gated Windows/Linux builds. That is **not**
+offline contract testing, and gated Linux and Wine-based Windows builds. That is **not**
 certification of production behavior against Azure. The package remains marked
 alpha until maintainers have evidence for a stable support commitment.
 
 The [v0.1.0 pre-release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0)
 provides the initial Windows/Linux executables and Python distributions.
 Its offline-only validation and unsigned-native-code limitations remain in effect.
+That release's Windows executable was built natively with Python 3.13; the
+Linux/Wine workflow below applies to subsequent builds, not the existing assets.
 
 | Area | Coverage / limitation |
 |------|-----------------------|
 | Python package | Windows/Linux CI on Python 3.10, 3.13, and 3.15; wheel and source distribution build/metadata checks; isolated wheel-install smoke test. |
-| Windows executable | x86-64 standalone build on `windows-latest`, Python 3.13; all command-help paths, config persistence, and offline SDK imports/auth failures. No MSI/ARM64 build. |
+| Windows executable | x86-64 standalone build on Ubuntu 24.04 using Windows Python 3.15.2 and PyInstaller under Wine 11; all command-help paths, config persistence, and offline SDK imports/auth failures run under Wine. No native Windows executable validation, MSI, or ARM64 build. Native Windows source tests are separate from artifact validation. |
 | Linux executable | x86-64 build on Ubuntu 22.04, Python 3.13; same black-box checks. Targets glibc 2.35+. No Alpine/musl, ARM64, or macOS binary support. Other Linux distributions are not individually certified. |
 | Dependencies | `uv.lock` pins resolved inputs/hashes; audits run in CI and weekly. Python-version/platform markers can select different locked versions. Public pip installs still resolve declared ranges. |
 | Code and repository | Ruff, formatting, strict mypy, CodeQL, dependency review, pinned actions, strict documentation-site builds, required PR/check gates, protected linear history. |
@@ -25,6 +27,39 @@ Linux binaries need a writable/executable temporary location for PyInstaller's
 one-file extraction, the relevant glibc runtime, and system CA trust.
 Checks on Ubuntu do not establish compatibility with every glibc distribution.
 Use the Python package where a standalone target is unsupported.
+
+## Building the Windows executable on Linux
+
+PyInstaller is [not a native cross-compiler](https://pyinstaller.org/en/stable/).
+The Windows job instead runs Windows Python and Windows dependencies inside
+Wine. It does not use a Windows runner or a third-party container image.
+
+Use Ubuntu 24.04 x86-64 with WineHQ stable **11.0.0.0~noble-1**, `xvfb`, `xauth`,
+`curl`, `file`, and uv **0.13.6**. The workflow installs Wine from its signed
+official apt repository and verifies the signing-key file's SHA-256 digest.
+From a checkout, with those tools installed:
+
+```bash
+export RUNNER_TEMP="$(mktemp -d)"
+export WINEPREFIX="$RUNNER_TEMP/fdry-wine"
+xvfb-run --auto-servernum bash packaging/build-windows.sh
+```
+
+The script downloads the official Windows Python **3.15.2** x64 installer,
+verifies its SHA-256 digest, and creates an isolated Windows virtual environment.
+It exports the reviewed `uv.lock`, requires dependency hashes and Windows
+wheels, audits that environment, runs offline source tests, packages the
+Windows PE executable, and runs all executable checks with Windows Python
+under Wine. The output is `dist/fdry.exe`; CI publishes it as
+`fdry-windows-x64.exe` with checksums.
+
+Update the reviewed installer URL/hash together when changing Python. Update
+the Wine version and signing-key hash deliberately when upgrading that toolchain.
+Do not replace a failed locked dependency with an unpinned installation.
+Wine is a compatibility layer: passing these checks does **not** prove the
+artifact works on real Windows. Validate the downloaded executable on the
+intended Windows versions before making native Windows support assurances.
+The separate Windows source-test matrix does not close that artifact-testing gap.
 
 ## Before tagging a release
 

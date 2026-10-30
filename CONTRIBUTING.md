@@ -22,8 +22,9 @@ uv run --no-sync pip-audit --skip-editable
 
 CI checks Windows and Linux with Python 3.10, 3.13, and 3.15, validates wheel/source
 metadata, and installs the wheel outside the checkout with locked runtime
-dependencies. Standalone binaries are separately built and tested on Windows
-x64 and Ubuntu 22.04 x64 with Python 3.13.
+dependencies. Both standalone binaries are built on Linux runners. The Windows
+x64 executable uses Windows Python 3.15.2 and PyInstaller under Wine 11 on Ubuntu
+24.04; the Linux x64 build uses native Python 3.13 on Ubuntu 22.04.
 
 `uv.lock` is the reviewed dependency snapshot, including platform/Python
 markers and artifact hashes. If changing `pyproject.toml`, run `uv lock`,
@@ -46,8 +47,12 @@ evaluations, storage uploads, training, or hosted compute.
 Binary tests require `FDRY_EXE` pointing to an absolute executable path.
 They run outside the checkout with isolated profile/home paths and credentials,
 and cover every leaf command's help, configuration persistence, and offline SDK
-authentication failures. Building on Linux requires a Linux host; there is no
-cross-compilation from Windows.
+authentication failures. Windows packaging and tests run inside Wine with
+Windows Python, not Linux Python; PyInstaller is not a native cross-compiler.
+Wine validation does not establish native Windows compatibility. Source tests
+still run on native Windows in the separate Python CI matrix.
+The [release guide](docs/releasing.md) documents the Linux/Wine prerequisites
+and local build command.
 
 Live testing requires explicit approval of the target, operations, data, cost
 ceiling, and cleanup. Document live-validation gaps rather than treating an

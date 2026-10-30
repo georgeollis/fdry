@@ -36,7 +36,7 @@ placeholders before submitting them; service support and permissions still apply
 | Distribution | Supported/tested target |
 |--------------|-------------------------|
 | Python package | Windows and Linux; CI tests Python **3.10, 3.13, and 3.15**. Python 3.10+ is required. |
-| Windows executable | x86-64; bundles Python 3.13. No Python installation is needed. |
+| Windows executable | x86-64; new builds bundle Python 3.15 and are built/tested on Linux under Wine. Native Windows artifact validation remains a release limitation. No Python installation is needed. |
 | Linux executable | x86-64, built on Ubuntu 22.04; glibc 2.35+ and an executable temporary directory are required. |
 | Other standalone targets | No macOS, ARM64, or Alpine/musl binaries are supplied. |
 
@@ -45,7 +45,8 @@ resolved conversations, and linear history; force pushes and deletion are blocke
 Dependencies are locked with hashes, actions are commit-pinned, and CI includes
 audits for every tested interpreter, CodeQL, package-install checks, and both
 standalone builds. Dependabot proposes updates; secret scanning and push
-protection are enabled.
+protection are enabled. Documentation-only changes keep documentation and
+security checks but skip the CLI test matrix, packages, audits, and executables.
 
 These safeguards do **not** make this a certified stable Azure client.
 No stable/PyPI release or native code signing is configured, and representative
@@ -306,9 +307,9 @@ Private endpoints require execution from a network with access and correct DNS.
 ```powershell
 uv sync --locked --all-extras --python 3.13
 uv run --no-sync python -m pytest -q -m "not binary"
-uv run --no-sync python -m ruff check src tests
-uv run --no-sync python -m ruff format --check src tests
-uv run --no-sync python -m mypy src
+uv run --no-sync python -m ruff check src tests .github\scripts
+uv run --no-sync python -m ruff format --check src tests .github\scripts
+uv run --no-sync python -m mypy src .github\scripts
 uv run --no-sync python -m build --no-isolation
 uv run --no-sync pip-audit --skip-editable
 ```
@@ -353,11 +354,15 @@ Run the commands above before opening a pull request.
 
 ### Build and release standalone executables
 
-Build on the target OS with Python 3.13 x64; PyInstaller does not cross-compile.
-For Windows:
+Both executable jobs use Linux runners. Windows packaging runs Windows Python
+3.15.2 and PyInstaller under Wine 11 on Ubuntu 24.04; Linux packaging uses native
+Python 3.13 on Ubuntu 22.04. See the [Linux/Wine build instructions](docs/releasing.md#building-the-windows-executable-on-linux).
+PyInstaller does not natively cross-compile.
+
+Native Windows builds remain possible with Python 3.15 x64:
 
 ```powershell
-uv sync --locked --all-extras --python 3.13
+uv sync --locked --all-extras --python 3.15
 uv run --no-sync python -m PyInstaller --noconfirm --clean --log-level WARN packaging\fdry.spec
 $env:FDRY_EXE = (Resolve-Path dist\fdry.exe).Path
 uv run --no-sync python -m pytest -q tests\binary
@@ -372,12 +377,13 @@ and no Azure credentials configured. The default
 test suite skips them unless `FDRY_EXE` is set.
 
 The **Executables** GitHub Actions workflow builds and exercises both platforms
-on pull requests, pushes to `main`, manual dispatch, and `v*` tags.
+on runtime-changing pull requests and pushes to `main`, manual dispatch, and
+`v*` tags. Documentation-only changes do not rebuild either executable.
 A tag must match the package version, for example `v0.1.0`.
 Tagged builds create a **draft GitHub release** with Windows/Linux x64 executables,
 Python wheel/source distributions, SHA-256 checksums, and the MIT license.
-Maintainers review and publish drafts separately. Pull requests and manual runs
-upload workflow artifacts without creating a release. No release is created by
+Maintainers review and publish drafts separately. Runtime-changing pull requests
+and manual runs upload workflow artifacts without creating a release. No release is created by
 a local build. See the [release checklist](docs/releasing.md) before tagging.
 
 ## License
