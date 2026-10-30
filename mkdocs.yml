@@ -9,7 +9,7 @@ strict: true
 theme:
   name: mkdocs
   custom_dir: overrides
-  color_mode: dark
+  color_mode: light
   user_color_mode_toggle: true
   highlightjs: false
 
@@ -30,8 +30,8 @@ markdown_extensions:
       permalink: true
 
 nav:
-  - Home: index.md
-  - Reference: cli.md
+  - Overview: index.md
+  - CLI reference: cli.md
   - Request files: request-bodies.md
   - Release guide: releasing.md
   - Contributing: https://github.com/georgeollis/fdry/blob/main/CONTRIBUTING.md

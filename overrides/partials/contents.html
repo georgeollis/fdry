@@ -1,0 +1,7 @@
+{% macro section(item) %}
+  {% if item.level == 2 %}<li class="nav-item"><a class="nav-link" href="{{ item.url }}">{{ item.title }}</a></li>{% endif %}
+  {% for child in item.children %}{{ section(child) }}{% endfor %}
+{% endmacro %}
+<ul class="nav flex-column fd-toc-links">
+  {% for item in page.toc %}{{ section(item) }}{% endfor %}
+</ul>

@@ -40,30 +40,6 @@
     wrapper.append(table);
   });
 
-  const tabs = [...document.querySelectorAll(".fd-terminal-tabs [role=tab]")];
-  const activate = (tab) => {
-    tabs.forEach((item) => {
-      const active = item === tab;
-      item.setAttribute("aria-selected", String(active));
-      item.tabIndex = active ? 0 : -1;
-      document.getElementById(item.getAttribute("aria-controls")).hidden = !active;
-    });
-  };
-  tabs.forEach((tab, index) => {
-    tab.addEventListener("click", () => activate(tab));
-    tab.addEventListener("keydown", (event) => {
-      let next;
-      if (event.key === "ArrowRight") next = tabs[(index + 1) % tabs.length];
-      if (event.key === "ArrowLeft") next = tabs[(index + tabs.length - 1) % tabs.length];
-      if (event.key === "Home") next = tabs[0];
-      if (event.key === "End") next = tabs[tabs.length - 1];
-      if (!next) return;
-      event.preventDefault();
-      activate(next);
-      next.focus();
-    });
-  });
-
   document.addEventListener("keydown", (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
       const modal = document.getElementById("mkdocs_search_modal");

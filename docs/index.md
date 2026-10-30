@@ -1,6 +1,16 @@
 ---
-title: fdry - Microsoft Foundry CLI
+title: Overview
 ---
+
+# fdry documentation
+
+fdry is an independent command-line interface for Microsoft Foundry.
+Use it to manage agents, model deployments, projects, and related resources.
+Commands return JSON, YAML, or table output and use Azure Identity credentials.
+
+The [CLI reference](cli.md) covers commands and options. The
+[request-body guide](request-bodies.md) documents YAML/JSON examples and
+how to add properties.
 
 ## Install
 
