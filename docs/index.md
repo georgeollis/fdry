@@ -1,5 +1,5 @@
 ---
-title: fdry - Your Foundry. Your terminal.
+title: fdry - Microsoft Foundry CLI
 ---
 
 ## Install
@@ -62,7 +62,7 @@ Requests can create resources, modify data, and incur Azure charges.
 There is no dry-run mode. Keep credentials and private prompts outside source
 control, and review outputs before sharing them.
 
-!!! note "Independent by design. Transparent about trust."
+!!! note "Pre-release limitations"
     fdry is an open-source community CLI for Microsoft Foundry, not an official
     Microsoft product. The initial release remains alpha. Offline testing and
     build hardening do not establish live Azure compatibility; native binaries
