@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block site_meta %}
+{{ super() }}
+<meta name="theme-color" content="#111019">
+<link rel="icon" type="image/svg+xml" href="{{ 'assets/mark.svg'|url }}">
+{% endblock %}
+
+{% block site_name %}
+<a class="navbar-brand fd-brand" href="{{ nav.homepage.url|url }}" aria-label="fdry home">
+  <img src="{{ 'assets/mark.svg'|url }}" width="30" height="30" alt="">
+  <span>fdry<span class="fd-brand-dot">.</span></span>
+  <span class="fd-brand-label">FOUNDRY CLI</span>
+</a>
+{% endblock %}
+
+{% block site_nav %}
+<ul class="nav navbar-nav fd-primary-nav">
+  {% for item in nav if item.is_page %}
+  <li class="nav-item">
+    <a class="nav-link{% if item.active %} active{% endif %}" href="{{ item.url|url }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.title }}</a>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}
+
+{% block search_button %}
+<li class="nav-item">
+  <button class="nav-link fd-search-button" type="button" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+    <i class="fa fa-search" aria-hidden="true"></i> <span>Search docs</span> <kbd>Ctrl K</kbd>
+  </button>
+</li>
+{% endblock %}
+
+{% block next_prev %}{% endblock %}
+
+{% block repo %}
+<li class="nav-item">
+  <a class="nav-link fd-repo" href="{{ config.repo_url }}" aria-label="fdry on GitHub"><i class="fa-brands fa-github" aria-hidden="true"></i><span class="d-lg-none ms-2">GitHub</span></a>
+</li>
+{% endblock %}
+
+{% block content %}
+<a class="fd-skip" href="#main-content">Skip to content</a>
+{% if page and page.is_homepage %}
+<main class="col-12 fd-home" id="main-content" tabindex="-1">
+  {% include "partials/hero.html" %}
+  <div class="fd-quickstart">
+    <div class="fd-section-intro">
+      <span class="fd-eyebrow">THE FIRST FIVE MINUTES</span>
+      <h2>Less setup.<br> More building.</h2>
+      <p>A familiar CLI. Your own credentials.<br>No new control plane to learn.</p>
+      <a href="{{ 'cli/'|url }}">Read the complete reference <span aria-hidden="true">&rarr;</span></a>
+    </div>
+    <div class="fd-quickstart-content">{{ page.content }}</div>
+  </div>
+</main>
+{% else %}
+<aside class="col-md-3 fd-sidebar" aria-label="On this page">
+  <p class="fd-eyebrow">ON THIS PAGE</p>
+  {% include "toc.html" %}
+  <a class="fd-sidebar-source" href="{{ page.edit_url }}"><i class="fa-brands fa-github" aria-hidden="true"></i> Improve this page <span aria-hidden="true">&nearr;</span></a>
+</aside>
+<main class="col-md-9 fd-article" id="main-content" tabindex="-1">
+  <div class="fd-breadcrumb"><a href="{{ nav.homepage.url|url }}">fdry</a><span aria-hidden="true">/</span><span>{{ page.title }}</span></div>
+  {% include "content.html" %}
+  <nav class="fd-page-nav" aria-label="Documentation pages">
+    {% if page.previous_page %}<a href="{{ page.previous_page.url|url }}"><span>PREVIOUS</span>{{ page.previous_page.title }} <span aria-hidden="true">&larr;</span></a>{% endif %}
+    {% if page.next_page %}<a href="{{ page.next_page.url|url }}"><span>NEXT</span>{{ page.next_page.title }} <span aria-hidden="true">&rarr;</span></a>{% endif %}
+  </nav>
+</main>
+{% endif %}
+{% endblock %}
+
+{% block footer %}
+<div class="container fd-footer">
+  <div><a class="fd-footer-brand" href="{{ nav.homepage.url|url }}">fdry<span>.</span></a><p>Foundry power. Terminal precision.</p><p class="fd-disclaimer">Independent community project. Not an official Microsoft product.</p></div>
+  <nav aria-label="Footer"><a href="{{ config.repo_url }}">GitHub</a><a href="{{ config.repo_url }}/blob/main/CONTRIBUTING.md">Contribute</a><a href="{{ config.repo_url }}/blob/main/SECURITY.md">Security</a><a href="{{ config.repo_url }}/blob/main/LICENSE">MIT license</a><a href="https://www.mkdocs.org/">Built with MkDocs</a></nav>
+</div>
+{% endblock %}

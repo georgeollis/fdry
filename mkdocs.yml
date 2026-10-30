@@ -8,8 +8,16 @@ strict: true
 
 theme:
   name: mkdocs
-  color_mode: auto
+  custom_dir: overrides
+  color_mode: dark
   user_color_mode_toggle: true
+  highlightjs: false
+
+extra_css:
+  - assets/foundry.css
+
+extra_javascript:
+  - assets/foundry.js
 
 plugins:
   - search
@@ -23,8 +31,8 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - CLI reference: cli.md
-  - Request files and properties: request-bodies.md
-  - Release readiness: releasing.md
+  - Reference: cli.md
+  - Request files: request-bodies.md
+  - Release guide: releasing.md
   - Contributing: https://github.com/georgeollis/fdry/blob/main/CONTRIBUTING.md
   - Security: https://github.com/georgeollis/fdry/blob/main/SECURITY.md

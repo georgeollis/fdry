@@ -88,3 +88,10 @@ GitHub Pages deploys only from `main`; PRs build the site without publishing it.
 Do not commit the generated `site` directory.
 Keep links to repository source/examples absolute so they work on both GitHub
 and the hosted documentation site.
+
+The Foundry-inspired design extends MkDocs' built-in theme through `overrides`.
+Styles, interaction code, and the original project mark live in `docs/assets`;
+no external fonts, theme CDN, or additional theme dependency is required.
+For design changes, also check narrow screens, both color modes, search,
+keyboard navigation, and code-copy controls. Respect reduced-motion settings
+and keep the independent-project and alpha-status notices visible.

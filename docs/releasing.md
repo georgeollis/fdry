@@ -7,6 +7,10 @@ offline contract testing, and gated Windows/Linux builds. That is **not**
 certification of production behavior against Azure. The package remains marked
 alpha until maintainers have evidence for a stable support commitment.
 
+The [v0.1.0 pre-release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0)
+provides the initial Windows/Linux executables and Python distributions.
+Its offline-only validation and unsigned-native-code limitations remain in effect.
+
 | Area | Coverage / limitation |
 |------|-----------------------|
 | Python package | Windows/Linux CI on Python 3.10, 3.13, and 3.15; wheel and source distribution build/metadata checks; isolated wheel-install smoke test. |
