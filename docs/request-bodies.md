@@ -64,6 +64,141 @@ The CLI resource name is supplied separately with `--name`; do not assume the
 files name resources for you. Evaluation `name` is a display label; fine-tuning
 `model` is a base-model identifier, not an agent name.
 
+## Adding properties to a request file
+
+The examples are starting points, **not an allowlist of every supported property**.
+You can add fields documented by the request schema for your operation and
+resource subtype. Most such additions need only a file edit, not a change to
+`fdry`. An arbitrary new YAML key does not create a new service capability.
+
+### Find the right schema first
+
+1. Choose the command and its request-body schema using the table below.
+2. Follow the source link in that template's field reference. Check the
+   property's type, required fields, allowed values, nested object schema,
+   mutually exclusive settings, and model/region restrictions.
+3. Add the property at the documented nesting level in an ignored local copy.
+   Preserve existing required fields. Use request wire names and the schema
+   matching your SDK/API version, not names guessed from portal labels.
+4. Review the complete body before submitting it. File bodies replace the
+   convenience-generated body; they are not patches merged with CLI defaults.
+   Read the created resource/version back and check the returned fields.
+
+| File/operation | Where to add fields | Schema to consult |
+|----------------|---------------------|-------------------|
+| Prompt agent | Prompt settings under `definition`; individual tools under `definition.tools[]` | [Prompt fields](#prompt-agentyaml) and each tool's schema selected by `type`. |
+| Hosted agent | Hosted settings under `definition`; image settings under `definition.container_configuration` | [Hosted fields](#hosted-agentyaml) and the container/protocol schemas. |
+| Toolbox | Toolbox settings at the root; tool settings under `tools[]` | [Toolbox fields](#toolboxyaml) and the selected **toolbox-tool** subtype, not the similarly named agent-tool type. |
+| Connection | ARM connection settings under `properties` | [Connection fields](#connectionyaml) and the subtype selected by `authType` and `category`. |
+| Evaluation | Definition settings at the root; grader settings under `testing_criteria[]` | [Evaluation fields](#evaluationjson) and the grader/data-source subtype. Run bodies use a separate schema. |
+| Fine-tuning | Job settings at the root; method settings under `method` | [Fine-tuning fields](#fine-tuningjson) and the chosen training method. |
+| Account/project/model creation | ARM fields such as `location`, `identity`, `sku`, and `properties`, as applicable | [Provisioning schemas](#account-project-and-model-provisioning) for that resource, not a data-plane response. |
+| Dataset/index creation | Version fields at the root and subtype-specific nested objects | [Dataset/index schemas](#dataset-and-index-bodies), selected by `type`. |
+
+Microsoft Learn pages describe Python SDK attributes as well as schema concepts.
+For ARM bodies, verify the wire spelling in the ARM request schema or SDK
+serialization: for example, the Python attribute `auth_type` is the request
+key `authType`, and `disable_local_auth` is `disableLocalAuth`.
+Do not copy response-only IDs, creation timestamps, provisioning status, or
+other read-only fields into a create request.
+
+If current online documentation describes a newer SDK/API than your installation,
+do not assume that property is available locally. Python users can inspect
+installed dependencies with `python -m pip show azure-ai-projects azure-mgmt-cognitiveservices openai`.
+The standalone executable bundles its own SDK versions; changing another Python
+environment does not upgrade the executable.
+
+### Example: add prompt sampling and a tool
+
+Start with `prompt-agent.local.yaml` and extend it to:
+
+```yaml
+definition:
+  kind: prompt
+  model: <MODEL_DEPLOYMENT>
+  instructions: You are a helpful assistant. Answer accurately and concisely.
+  temperature: 0.2
+  tools:
+    - type: web_search
+      search_context_size: low
+```
+
+`temperature` is a number under `definition`, not a quoted string or a root-level
+property. `tools` is an array; `search_context_size` belongs to the web-search
+tool object, not the agent definition. Its allowed values are `low`, `medium`,
+and `high`. The chosen model must support both the sampling option and the tool;
+remove unsupported settings rather than assuming every deployment accepts them.
+
+The tool schema is [WebSearchTool](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.websearchtool).
+This is different from the `WebSearchToolboxTool` schema used in `toolbox.yaml`.
+Defining a toolbox does not automatically attach its tools to an agent.
+
+Submit the complete local file instead of combining it with convenience flags:
+
+```powershell
+fdry agent create --name "<AGENT>" --file examples\prompt-agent.local.yaml
+fdry agent versions --name "<AGENT>"
+fdry agent show --name "<AGENT>" --version "<RETURNED_VERSION>"
+```
+
+Creation makes a new immutable version, even if the agent already exists.
+Use the returned version when reading back; do not assume it is `1`.
+
+### Schema-defined properties versus free-form keys
+
+Object fields are not all equally extensible:
+
+| Object | Can you invent new keys? | Example |
+|--------|--------------------------|---------|
+| Agent `definition` or ARM `properties` | No; use documented schema properties. | `definition.temperature` is documented; a made-up `definition.creativity` is not a substitute. |
+| Hosted `definition.environment_variables` | Yes, for variable names your container understands; values are strings. | `LOG_LEVEL: "INFO"` only affects an application that reads `LOG_LEVEL`. |
+| Connection `properties.metadata` | User metadata is a string-to-string map; retain any provider-required entries. | Add a workload label without removing the example's `ApiType: Azure`. |
+| Dataset/index `tags` or supported `metadata` maps | User-chosen string keys/values, subject to API limits. | A label identifies your workload; it does not change provisioning behavior. |
+| Evaluation `item_schema.properties` | Yes, for dataset fields, using valid JSON Schema definitions. | Adding a column requires matching dataset items and updating grader/input expressions that reference it. |
+
+For example, merge this **excerpt** into the existing hosted definition while
+preserving its CPU, memory, image, and protocol settings:
+
+```yaml
+definition:
+  environment_variables:
+    LOG_LEVEL: "INFO"
+```
+
+This configures the hosted application, not `fdry` itself. It is not secret
+resolution: `${SECRET}` would be sent literally. Never commit credentials in a
+request body, metadata map, tag, or environment-variable map.
+
+### Validation and when CLI changes are needed
+
+An editor can check YAML/JSON syntax, but parsing does not prove a property's
+schema, model compatibility, permissions, or service availability. `fdry` has
+no schema-validation or dry-run command. **`create --file` submits a real
+request** and can incur charges. Use an appropriately isolated Azure target
+for integration testing.
+
+If a request fails, check the exact field path and wire spelling, JSON type,
+required sibling properties, discriminator (`kind`, `type`, or `authType`),
+mutually exclusive settings, and SDK/API/model support. If a field is missing
+from read-back output, do not assume it took effect: it could be read-only,
+normalized, omitted from that response, or ignored. Confirm against the schema
+and service behavior.
+
+| Change | Edit the file only, or change the CLI? |
+|--------|---------------------------------------|
+| Add a documented property to an existing supported request subtype | Usually file only; SDK and service must both support it. |
+| Add a service API field to an evaluation/run/fine-tuning body | Usually file only; the adapter forwards additional API fields as described [below](#advanced-fields-and-service-validation). Do not add a literal `extra_body` wrapper. |
+| Add a new command-line flag, command, or saved configuration key | CLI code, help/reference updates, and focused tests are required. Adding YAML cannot register a flag or config key. |
+| Use an agent kind other than `prompt` or `hosted` | CLI support is required: `agent create` currently rejects other kinds before contacting Azure. |
+| Use a new API property absent from the bundled SDK, or change transport behavior | May require dependency/adapter changes and a new package/executable build; a file edit cannot upgrade the SDK or set SDK transport options. |
+
+For contributors changing these boundaries, request parsing/forwarding lives in
+[`core/documents.py`](../src/fdry/core/documents.py); operation-specific validation
+and SDK calls live in [`commands`](../src/fdry/commands).
+Keep example files, this field reference, and focused request-contract tests in
+sync when introducing a newly supported request shape. Do not silently drop a
+property or weaken validation merely to make an unsupported request pass.
+
 ## prompt-agent.yaml
 
 | Field | Type / example value | Required and meaning |

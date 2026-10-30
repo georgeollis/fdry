@@ -14,6 +14,8 @@ selected region, subscription, and service rollout.
 CLI choice, and configuration value.
 [Request-body reference](docs/request-bodies.md) explains every field in the
 bundled YAML/JSON examples, provisioning defaults, and advanced schema references.
+[Adding properties](docs/request-bodies.md#adding-properties-to-a-request-file)
+shows how to extend a template, find supported fields, and check the result.
 
 The files in `examples` are AI-assisted templates authored for this project,
 not official Microsoft samples or exports from an Azure environment. They use
