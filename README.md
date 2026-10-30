@@ -6,6 +6,8 @@ Microsoft product.
 
 [![CI](https://github.com/georgeollis/fdry/actions/workflows/ci.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/ci.yml)
 [![Executables](https://github.com/georgeollis/fdry/actions/workflows/binary.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/binary.yml)
+[![Documentation](https://github.com/georgeollis/fdry/actions/workflows/pages.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/pages.yml)
+[![Security](https://github.com/georgeollis/fdry/actions/workflows/security.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/security.yml)
 
 **Status:** initial implementation. This is not yet full Foundry portal parity.
 Preview APIs, model availability, quota, and hosted-agent support depend on the
@@ -28,6 +30,27 @@ The files in `examples` are AI-assisted templates authored for this project,
 not official Microsoft samples or exports from an Azure environment. They use
 the SDK/API request formats linked in the request-body reference. Replace all
 placeholders before submitting them; service support and permissions still apply.
+
+## Support and repository safeguards
+
+| Distribution | Supported/tested target |
+|--------------|-------------------------|
+| Python package | Windows and Linux; CI tests Python **3.10, 3.13, and 3.15**. Python 3.10+ is required. |
+| Windows executable | x86-64; bundles Python 3.13. No Python installation is needed. |
+| Linux executable | x86-64, built on Ubuntu 22.04; glibc 2.35+ and an executable temporary directory are required. |
+| Other standalone targets | No macOS, ARM64, or Alpine/musl binaries are supplied. |
+
+`main` requires pull requests, passing quality/security/documentation gates,
+resolved conversations, and linear history; force pushes and deletion are blocked.
+Dependencies are locked with hashes, actions are commit-pinned, and CI includes
+audits for every tested interpreter, CodeQL, package-install checks, and both
+standalone builds. Dependabot proposes updates; secret scanning and push
+protection are enabled.
+
+These safeguards do **not** make this a certified stable Azure client.
+No stable/PyPI release or native code signing is configured, and representative
+live Azure validation remains outstanding. See [SECURITY.md](SECURITY.md),
+[CONTRIBUTING.md](CONTRIBUTING.md), and the [release checklist](docs/releasing.md).
 
 ## Install
 
@@ -328,7 +351,7 @@ Build on the target OS with Python 3.13 x64; PyInstaller does not cross-compile.
 For Windows:
 
 ```powershell
-uv sync --locked --all-extras
+uv sync --locked --all-extras --python 3.13
 uv run --no-sync python -m PyInstaller --noconfirm --clean --log-level WARN packaging\fdry.spec
 $env:FDRY_EXE = (Resolve-Path dist\fdry.exe).Path
 uv run --no-sync python -m pytest -q tests\binary

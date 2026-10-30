@@ -56,7 +56,7 @@ offline test as a live pass.
 ## Pull requests and repository checks
 
 The required gates are `Required CI`, `Required executables`, `CodeQL analysis`,
-and `Documentation site`. Aggregated gates fail when any prerequisite fails or is
+`Dependency review`, and `Documentation site`. Aggregated gates fail when any prerequisite fails or is
 cancelled; do not make a required workflow silently skip paths.
 Keep action references pinned to full commit SHAs. Dependabot proposes action
 and uv dependency updates; review their changelogs and test results.

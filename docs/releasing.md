@@ -29,7 +29,8 @@ Use the Python package where a standalone target is unsupported.
    or publish with unresolved material findings.
 2. Verify `Required CI`, `Required executables`, `CodeQL analysis`, and `Documentation site` for the
    exact commit on `main`. Check both executable artifacts and isolated wheel
-   installation, not only editable-source tests.
+   installation, not only editable-source tests. The release PR must also pass
+   `Dependency review`.
 3. Run separately authorized Azure integration tests against representative
    projects/models and permissions. Include failure/cleanup behavior. Record
    sanitized evidence, supported regions/models/APIs, costs, and any exclusions.
