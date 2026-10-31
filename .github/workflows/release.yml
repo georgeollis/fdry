@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  executables:
+    name: Executables
+    uses: ./.github/workflows/binary.yml
+
+  release:
+    name: Draft release
+    needs: [ci, executables]
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: fdry-*
+          merge-multiple: true
+          path: release
+      - name: Combine checksums
+        run: |
+          Get-ChildItem release -Filter 'SHA256SUMS-*' | Get-Content | Sort-Object | Set-Content (Join-Path release SHA256SUMS) -Encoding ascii
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: release/SHA256SUMS
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $assets = Get-ChildItem release -File | Where-Object Name -NotLike 'SHA256SUMS-*' | ForEach-Object FullName
+          gh release create "$env:GITHUB_REF_NAME" @assets --verify-tag --draft --generate-notes --title "$env:GITHUB_REF_NAME"

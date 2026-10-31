@@ -1,16 +1,41 @@
 # YAML and JSON request bodies
 
-## Origin and scope
+## SDK/API request bodies
 
-The six files in [`examples`](https://github.com/georgeollis/fdry/tree/main/examples)
-were authored for this CLI with AI assistance. They use the SDK/API schemas
-linked below and contain placeholders for your own resource settings.
+Use YAML or JSON files to send the request body accepted by the corresponding
+Microsoft Foundry SDK or Azure management API. These are **service request
+schemas, not a separate `fdry` configuration language**: use the operation's
+documented API field names, nesting, types, and resource discriminator.
+`--file` lets you configure agent instructions and tools, model deployment
+settings, connections, and other supported resources beyond convenience flags.
 
-This document covers **every field and literal in the six bundled templates**,
+The files in [`examples`](https://github.com/georgeollis/fdry/tree/main/examples)
+show those request shapes with placeholders for your own settings. You can
+write a body using the linked schema or construct an SDK request model and
+serialize it directly, as the agent and model examples below demonstrate.
+No resource lookup or Azure request is needed to serialize a request model.
+
+This document covers **every field and literal in the bundled examples**,
 all CLI-generated provisioning fields, and the directly supported evaluation/
 fine-tuning body parameters. Links to the authoritative service schemas cover
 advanced fields and discriminated subtypes; `fdry` does not maintain a separate,
 exhaustive copy of every Azure API schema.
+
+### Choose the SDK operation
+
+| CLI command | SDK operation | Request schema |
+|-------------|---------------|----------------|
+| `fdry agent create` | `AIProjectClient.agents.create_version` ([reference](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.operations.agentsoperations)) | A body containing `definition`: [PromptAgentDefinition](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.promptagentdefinition) or [HostedAgentDefinition](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.hostedagentdefinition), plus supported version fields such as `description` and `metadata`. |
+| `fdry model create` | `CognitiveServicesManagementClient.deployments.begin_create_or_update` ([reference](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.operations.deploymentsoperations)) | [Deployment](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.models.deployment), with `sku` and `properties.model`. |
+| `fdry toolbox create` | `AIProjectClient.toolboxes.create_version` ([reference](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.operations.toolboxesoperations)) | Version body with `tools`; each entry uses a [ToolboxTool](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.toolboxtool) subtype. |
+| `fdry connection create` | `CognitiveServicesManagementClient.project_connections.create` ([reference](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.operations.projectconnectionsoperations)) | ARM connection body with `properties`, selected by `authType` and `category`; see [connection fields](#connectionyaml). |
+| `fdry evaluation create` | `OpenAI.evals.create` | [EvalCreateParams](https://github.com/openai/openai-python/blob/main/src/openai/types/eval_create_params.py). |
+| `fdry fine-tuning create` | `OpenAI.fine_tuning.jobs.create` | [JobCreateParams](https://github.com/openai/openai-python/blob/main/src/openai/types/fine_tuning/job_create_params.py). |
+
+Use **request** models, not a serialized `show` response: responses can contain
+read-only IDs, timestamps, and provisioning state. SDK serialization confirms
+field spelling and shape, not live model/region support, permissions, quota, or
+successful deployment. Submitting a file creates or updates a real resource.
 
 ## File format and validation
 
@@ -53,11 +78,13 @@ directly to the corresponding Foundry SDK operation.
 | Template | Consumer | Prerequisites |
 |----------|----------|---------------|
 | [`prompt-agent.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/prompt-agent.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint and a compatible deployed model. |
+| [`prompt-agent-web-search.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/prompt-agent-web-search.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint and a deployed model with web-search tool support. |
 | [`hosted-agent.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/hosted-agent.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint, compatible accessible image, hosted-agent support and permissions. |
 | [`toolbox.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/toolbox.yaml) | `fdry toolbox create --name <TOOLBOX> --file <PATH>` | Project endpoint and support for the selected tools. |
 | [`connection.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/connection.yaml) | `fdry connection create --name <CONNECTION> --file <PATH>` | Management settings, existing search service, appropriate permissions. |
 | [`evaluation.json`](https://github.com/georgeollis/fdry/blob/main/examples/evaluation.json) | `fdry evaluation create --file <PATH>` | Project endpoint and evaluation API support. |
 | [`fine-tuning.json`](https://github.com/georgeollis/fdry/blob/main/examples/fine-tuning.json) | `fdry fine-tuning create --file <PATH>` | Project endpoint, trainable model, uploaded training file and training permissions. |
+| [`model-deployment.json`](https://github.com/georgeollis/fdry/blob/main/examples/model-deployment.json) | `fdry model create --name <DEPLOYMENT> --file <PATH>` | Management settings, an available catalog model/version, compatible SKU and sufficient quota. |
 
 The CLI resource name is supplied separately with `--name`; do not assume the
 files name resources for you. Evaluation `name` is a display label; fine-tuning
@@ -107,41 +134,87 @@ installed dependencies with `python -m pip show azure-ai-projects azure-mgmt-cog
 The standalone executable bundles its own SDK versions; changing another Python
 environment does not upgrade the executable.
 
-### Example: add prompt sampling and a tool
+### Example: configure an agent with web search
 
-Start with `prompt-agent.local.yaml` and extend it to:
+Use
+[`prompt-agent-web-search.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/prompt-agent-web-search.yaml)
+to configure instructions, a tool, a version description, and metadata in one
+complete `agents.create_version` request:
 
 ```yaml
 definition:
   kind: prompt
   model: <MODEL_DEPLOYMENT>
-  instructions: You are a helpful assistant. Answer accurately and concisely.
-  temperature: 0.2
+  instructions: >-
+    Answer research questions using web search when current information is
+    needed. Cite sources and distinguish verified facts from uncertainty.
   tools:
     - type: web_search
       search_context_size: low
+description: Research assistant with web search.
+metadata:
+  purpose: research
 ```
 
-`temperature` is a number under `definition`, not a quoted string or a root-level
-property. `tools` is an array; `search_context_size` belongs to the web-search
-tool object, not the agent definition. Its allowed values are `low`, `medium`,
-and `high`. The chosen model must support both the sampling option and the tool;
-remove unsupported settings rather than assuming every deployment accepts them.
+`tools` is an array; `search_context_size` belongs to the web-search tool
+object, not the agent definition. Its allowed values are `low`, `medium`, and
+`high`. `description` and `metadata` belong to the version body, outside
+`definition`. `metadata.purpose` is a user-defined label, not a deployment setting.
+Use a model that supports this tool; the minimal `prompt-agent.yaml` has no tools.
+If the model also supports sampling configuration, you can add a numeric
+`temperature: 0.2` under `definition`, not at the root.
 
 The tool schema is [WebSearchTool](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.websearchtool).
 This is different from the `WebSearchToolboxTool` schema used in `toolbox.yaml`.
 Defining a toolbox does not automatically attach its tools to an agent.
 
+To obtain the same request body directly from SDK model names, run this Python
+code in a source checkout's synced environment (`uv run --no-sync python <SCRIPT>`):
+
+```python
+import json
+from pathlib import Path
+
+from azure.ai.projects.models import PromptAgentDefinition, WebSearchTool
+
+definition = PromptAgentDefinition(
+    model="<MODEL_DEPLOYMENT>",
+    instructions=(
+        "Answer research questions using web search when current information is "
+        "needed. Cite sources and distinguish verified facts from uncertainty."
+    ),
+    tools=[WebSearchTool(search_context_size="low")],
+)
+body = {
+    "definition": definition.as_dict(),
+    "description": "Research assistant with web search.",
+    "metadata": {"purpose": "research"},
+}
+Path(r"examples\prompt-agent-web-search.local.json").write_text(
+    json.dumps(body, indent=2) + "\n", encoding="utf-8"
+)
+```
+
+`PromptAgentDefinition.as_dict()` serializes its nested tool and adds the
+`kind: prompt` and `type: web_search` discriminators. No client or credentials
+are needed. Replace `<MODEL_DEPLOYMENT>` in the code or output before submitting;
+JSON and YAML are equivalent ways of supplying this body.
+
 Submit the complete local file instead of combining it with convenience flags:
 
 ```powershell
-fdry agent create --name "<AGENT>" --file examples\prompt-agent.local.yaml
+fdry model list
+fdry agent create --name "<AGENT>" --file examples\prompt-agent-web-search.local.json
 fdry agent versions --name "<AGENT>"
 fdry agent show --name "<AGENT>" --version "<RETURNED_VERSION>"
 ```
 
 Creation makes a new immutable version, even if the agent already exists.
 Use the returned version when reading back; do not assume it is `1`.
+
+The generated file is a reusable request, not an exported live agent. To change
+the instructions or tools later, edit it and run `agent create` with the same
+agent name; that creates another version.
 
 ### Schema-defined properties versus free-form keys
 
@@ -433,6 +506,93 @@ generates:
 
 Source: [Deployment model](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.models.deployment).
 Choose a model format and SKU supported by the selected model and Azure region.
+
+### model-deployment.json
+
+Use
+[`model-deployment.json`](https://github.com/georgeollis/fdry/blob/main/examples/model-deployment.json)
+to send the complete deployment request, including an explicit model-version
+upgrade policy not exposed by a convenience flag:
+
+```json
+{
+  "sku": {
+    "name": "GlobalStandard",
+    "capacity": 1
+  },
+  "properties": {
+    "model": {
+      "format": "OpenAI",
+      "name": "<CATALOG_MODEL>",
+      "version": "<MODEL_VERSION>"
+    },
+    "versionUpgradeOption": "NoAutoUpgrade"
+  }
+}
+```
+
+The fields shared with convenience flags are described above.
+`properties.versionUpgradeOption` is the wire name of the SDK attribute
+`DeploymentProperties.version_upgrade_option`. Its documented values are
+`OnceNewDefaultVersionAvailable`, `OnceCurrentVersionExpired`, and
+`NoAutoUpgrade`. This example requests no automatic version upgrade; it does
+not extend the model's availability past retirement. Choose your policy
+deliberately and check service support.
+
+You can generate this JSON directly from the management SDK:
+
+```python
+import json
+from pathlib import Path
+
+from azure.mgmt.cognitiveservices.models import (
+    Deployment,
+    DeploymentModel,
+    DeploymentProperties,
+    Sku,
+)
+
+deployment = Deployment(
+    sku=Sku(name="GlobalStandard", capacity=1),
+    properties=DeploymentProperties(
+        model=DeploymentModel(
+            format="OpenAI", name="<CATALOG_MODEL>", version="<MODEL_VERSION>"
+        ),
+        version_upgrade_option="NoAutoUpgrade",
+    ),
+)
+Path(r"examples\model-deployment.local.json").write_text(
+    json.dumps(deployment.serialize(), indent=2) + "\n", encoding="utf-8"
+)
+```
+
+Use `Deployment.serialize()` for the **request wire names**, not
+`as_dict()` with its default Python attribute names. For example,
+`version_upgrade_option` becomes `versionUpgradeOption`.
+This only writes a file; it does not deploy a model.
+
+Alternatively, copy the bundled file and edit it. Discover an available model
+and explicit version, replace placeholders, and review the SKU, capacity, and
+upgrade policy before submitting:
+
+```powershell
+fdry model catalog --location "<REGION>"
+Copy-Item examples\model-deployment.json examples\model-deployment.local.json
+# Edit the local file with the selected catalog model, version, and SKU.
+fdry model create --name "<MODEL_DEPLOYMENT>" --file examples\model-deployment.local.json
+fdry model show --name "<MODEL_DEPLOYMENT>"
+```
+
+If you generated the local file with Python, skip `Copy-Item` so you do not
+overwrite your changes. `--name` is the new deployment's name; the body's
+`properties.model.name` is the catalog model identifier. Use the deployment
+name as `definition.model` when configuring an agent, not the catalog name.
+`model create` waits for the deployment operation and may incur charges.
+
+Sources: [DeploymentsOperations.begin_create_or_update](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.operations.deploymentsoperations),
+[DeploymentProperties](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.models.deploymentproperties),
+[DeploymentModel](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.models.deploymentmodel),
+[Sku](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.models.sku).
 
 ## Dataset and index bodies
 

@@ -25,6 +25,17 @@ metadata, and installs the wheel outside the checkout with locked runtime
 dependencies. Standalone binaries are separately built and tested on Windows
 x64 and Ubuntu 22.04 x64 with Python 3.13.
 
+`ci.yml` orchestrates reusable code-quality, test-matrix, package-installation,
+and dependency-audit workflows. Lint, formatting, and type checks run once on
+Python 3.13 rather than in every test and executable job. Interpreter-specific
+dependency audits stay with the test matrix; the all-extras audit is shared with
+scheduled security checks. `binary.yml` builds and exercises standalone
+executables. `release.yml` handles version tags, requires both CI and executable
+validation, then attests artifacts and creates a draft release. Build and test
+jobs have read-only permissions; release write permissions are limited to the
+publishing job. Reusable workflows exchange artifacts within the same run.
+Python distributions come from the package workflow, not the executable builds.
+
 `uv.lock` is the reviewed dependency snapshot, including platform/Python
 markers and artifact hashes. If changing `pyproject.toml`, run `uv lock`,
 include the updated lock, and rerun checks. For an intentional dependency

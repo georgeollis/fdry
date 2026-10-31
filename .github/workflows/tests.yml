@@ -1,0 +1,40 @@
+name: Tests
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python }})
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.13", "3.15"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.6"
+      - run: uv sync --locked --extra dev
+      - run: uv run --no-sync python -m pytest -q -m "not binary"
+      - name: Audit the target interpreter from isolated tooling
+        shell: pwsh
+        run: |
+          $sitePackages = uv run --no-sync python -c "import sysconfig; print(sysconfig.get_path('purelib'))"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:UV_PROJECT_ENVIRONMENT = Join-Path $env:RUNNER_TEMP dependency-audit
+          uv sync --locked --extra audit --python 3.13
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --no-sync pip-audit --skip-editable --path $sitePackages
+      - run: uv run --no-sync python -m fdry --help

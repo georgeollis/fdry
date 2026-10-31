@@ -2,17 +2,17 @@ name: Executables
 
 on:
   workflow_dispatch:
+  workflow_call:
   pull_request:
   merge_group:
   push:
     branches: [main]
-    tags: ["v*"]
 
 permissions:
   contents: read
 
 concurrency:
-  group: executables-${{ github.ref }}
+  group: executables-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 defaults:
@@ -52,35 +52,21 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: "0.13.6"
-      - run: uv sync --locked --all-extras
+      - run: uv sync --locked --extra dev --extra binary
       - name: Check release tag
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           uv run --no-sync python -c "import os; from fdry import __version__; assert os.environ['GITHUB_REF_NAME'] == f'v{__version__}', 'Tag must match the package version'"
-      - run: uv run --no-sync python -m ruff check src tests .github/scripts
-      - run: uv run --no-sync python -m ruff format --check src tests .github/scripts
-      - run: uv run --no-sync python -m mypy src .github/scripts
-      - run: uv run --no-sync python -m pytest -q -m "not binary"
-      - run: uv run --no-sync pip-audit --skip-editable
       - run: uv run --no-sync python -m PyInstaller --noconfirm --clean --log-level WARN (Join-Path packaging fdry.spec)
       - name: Exercise standalone executable
         run: |
           $env:FDRY_EXE = (Resolve-Path (Join-Path dist '${{ matrix.executable }}')).Path
           uv run --no-sync python -m pytest -q (Join-Path tests binary)
-      - name: Build Python distributions
-        if: matrix.target == 'linux-x64'
-        run: |
-          uv run --no-sync python -m build --no-isolation
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          uv run --no-sync python -m twine check --strict (Get-ChildItem dist -File | Where-Object { $_.Name -match '\.(whl|tar\.gz)$' } | ForEach-Object FullName)
       - name: Prepare release assets
         run: |
           $release = New-Item -ItemType Directory -Path (Join-Path dist release) -Force
           Copy-Item (Join-Path dist '${{ matrix.executable }}') (Join-Path $release '${{ matrix.asset }}')
           Copy-Item LICENSE (Join-Path $release LICENSE)
-          if ('${{ matrix.target }}' -eq 'linux-x64') {
-            Get-ChildItem dist -File | Where-Object { $_.Name -match '\.(whl|tar\.gz)$' } | Copy-Item -Destination $release
-          }
           Get-ChildItem $release -File | Where-Object Name -ne LICENSE | Sort-Object Name | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $($_.Name)"
@@ -112,32 +98,3 @@ jobs:
             exit 0
           }
           if ($env:RESULT -ne 'success') { throw 'Executable validation failed.' }
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [build, required]
-    runs-on: windows-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
-    steps:
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: fdry-*
-          merge-multiple: true
-          path: release
-      - name: Combine checksums
-        run: |
-          Get-ChildItem release -Filter 'SHA256SUMS-*' | Get-Content | Sort-Object | Set-Content (Join-Path release SHA256SUMS) -Encoding ascii
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-checksums: release/SHA256SUMS
-      - name: Create draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          $assets = Get-ChildItem release -File | Where-Object Name -NotLike 'SHA256SUMS-*' | ForEach-Object FullName
-          gh release create "$env:GITHUB_REF_NAME" @assets --verify-tag --draft --generate-notes --title "$env:GITHUB_REF_NAME"

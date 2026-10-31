@@ -9,8 +9,9 @@ Use it to manage agents, model deployments, projects, and related resources.
 Commands return JSON, YAML, or table output and use Azure Identity credentials.
 
 The [CLI reference](cli.md) covers commands and options. The
-[request-body guide](request-bodies.md) documents YAML/JSON examples and
-how to add properties.
+[request-body guide](request-bodies.md) maps YAML/JSON bodies to their SDK/API
+operations and shows how to configure agents and model deployments, serialize
+SDK request models, and add documented properties.
 
 ## Install
 
