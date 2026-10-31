@@ -6,7 +6,14 @@ from pathlib import Path
 import pytest
 import yaml
 from azure.ai.projects import AIProjectClient
+from azure.ai.projects.models import PromptAgentDefinition, WebSearchTool
 from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
+from azure.mgmt.cognitiveservices.models import (
+    Deployment,
+    DeploymentModel,
+    DeploymentProperties,
+    Sku,
+)
 from click.testing import CliRunner
 
 from fdry.cli import cli
@@ -103,6 +110,71 @@ def test_real_management_sdk_deployment(monkeypatch: pytest.MonkeyPatch) -> None
         }
     ]
     assert "/accounts/account/deployments/deployment" in transport.requests[0].url
+
+
+def test_agent_example_matches_sdk_request_and_is_forwarded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = Path(__file__).parents[2] / "examples" / "prompt-agent-web-search.yaml"
+    expected = {
+        "definition": PromptAgentDefinition(
+            model="<MODEL_DEPLOYMENT>",
+            instructions=(
+                "Answer research questions using web search when current information is "
+                "needed. Cite sources and distinguish verified facts from uncertainty."
+            ),
+            tools=[WebSearchTool(search_context_size="low")],
+        ).as_dict(),
+        "description": "Research assistant with web search.",
+        "metadata": {"purpose": "research"},
+    }
+    assert yaml.safe_load(path.read_text(encoding="utf-8")) == expected
+    transport = Transport([{"id": "agent:1", "name": "agent", "version": "1"}])
+    with AIProjectClient(ENDPOINT, Credential(), transport=transport) as client:
+        monkeypatch.setattr(Runtime, "project_client", lambda self: client)
+        result = CliRunner().invoke(cli, ["agent", "create", "-n", "agent", "--file", str(path)])
+    assert result.exit_code == 0, result.output
+    assert transport.bodies == [expected]
+
+
+def test_model_example_matches_sdk_wire_names_and_is_forwarded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = Path(__file__).parents[2] / "examples" / "model-deployment.json"
+    expected = Deployment(
+        sku=Sku(name="GlobalStandard", capacity=1),
+        properties=DeploymentProperties(
+            model=DeploymentModel(
+                format="OpenAI", name="<CATALOG_MODEL>", version="<MODEL_VERSION>"
+            ),
+            version_upgrade_option="NoAutoUpgrade",
+        ),
+    ).serialize()
+    assert json.loads(path.read_text(encoding="utf-8")) == expected
+    transport = Transport(
+        [{"name": "deployment", "properties": {"provisioningState": "Succeeded"}}]
+    )
+    with CognitiveServicesManagementClient(
+        Credential(), "subscription", transport=transport
+    ) as client:
+        monkeypatch.setattr(Runtime, "management_client", lambda self: client)
+        result = CliRunner().invoke(
+            cli,
+            [
+                "--resource-group",
+                "group",
+                "--account",
+                "account",
+                "model",
+                "create",
+                "-n",
+                "deployment",
+                "--file",
+                str(path),
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert transport.bodies == [expected]
 
 
 @pytest.mark.parametrize(

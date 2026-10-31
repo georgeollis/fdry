@@ -22,10 +22,12 @@ bundled YAML/JSON examples, provisioning defaults, and advanced schema reference
 [Adding properties](docs/request-bodies.md#adding-properties-to-a-request-file)
 shows how to extend a template, find supported fields, and check the result.
 
-The files in `examples` are AI-assisted templates authored for this project,
-not official Microsoft samples or exports from an Azure environment. They use
-the SDK/API request formats linked in the request-body reference. Replace all
-placeholders before submitting them; service support and permissions still apply.
+The YAML/JSON files in `examples` use the corresponding SDK/API request bodies,
+not a separate CLI configuration schema. Use documented API field names to
+configure agents, tools, model deployments, and other supported resources.
+The [request-body guide](docs/request-bodies.md#sdkapi-request-bodies) names the
+SDK operations and shows how to generate files directly from SDK request models.
+Replace placeholders before submitting; service support and permissions still apply.
 
 ## Support and repository safeguards
 
@@ -230,10 +232,29 @@ for types, required values, and where to obtain each value. The following
 commands show which command consumes each template:
 
 ```powershell
-fdry agent create --name "<AGENT>" --file examples\prompt-agent.yaml
-fdry agent create --name "<HOSTED_AGENT>" --file examples\hosted-agent.yaml
-fdry connection create --name "<CONNECTION>" --file examples\connection.yaml
-fdry toolbox create --name "<TOOLBOX>" --file examples\toolbox.yaml
+Copy-Item examples\prompt-agent-web-search.yaml examples\prompt-agent-web-search.local.yaml
+Copy-Item examples\model-deployment.json examples\model-deployment.local.json
+# Replace placeholders and review settings in both local files before submitting.
+fdry model create --name "<MODEL_DEPLOYMENT>" --file examples\model-deployment.local.json
+fdry agent create --name "<AGENT>" --file examples\prompt-agent-web-search.local.yaml
+fdry agent versions --name "<AGENT>"
+```
+
+The model body configures catalog model/version, SKU, capacity, and version
+upgrade policy. The agent body configures instructions, web search, description,
+and metadata; set `definition.model` to the model **deployment** name, not its
+catalog identifier. See [agent configuration](docs/request-bodies.md#example-configure-an-agent-with-web-search)
+and [model configuration](docs/request-bodies.md#model-deploymentjson) for exact
+SDK models and serialization examples. The minimal `prompt-agent.yaml` omits
+tools when web search is not needed or supported.
+
+Other complete bodies can be submitted the same way after creating and editing
+local copies of the corresponding examples:
+
+```powershell
+fdry agent create --name "<HOSTED_AGENT>" --file examples\hosted-agent.local.yaml
+fdry connection create --name "<CONNECTION>" --file examples\connection.local.yaml
+fdry toolbox create --name "<TOOLBOX>" --file examples\toolbox.local.yaml
 fdry toolbox publish --name "<TOOLBOX>" --version "<VERSION>"
 ```
 

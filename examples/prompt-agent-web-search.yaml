@@ -1,0 +1,12 @@
+definition:
+  kind: prompt
+  model: <MODEL_DEPLOYMENT>
+  instructions: >-
+    Answer research questions using web search when current information is
+    needed. Cite sources and distinguish verified facts from uncertainty.
+  tools:
+    - type: web_search
+      search_context_size: low
+description: Research assistant with web search.
+metadata:
+  purpose: research

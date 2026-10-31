@@ -33,11 +33,12 @@ and manual workflow runs retain full validation.
 See the [contributor policy](https://github.com/georgeollis/fdry/blob/main/CONTRIBUTING.md#pull-requests-and-repository-checks)
 for the documentation allowlist.
 
-For a docs-only commit being considered for release, manually run the
-**Executables** workflow on the reviewed branch before tagging, then inspect
-both platform artifacts and results. Do not remove protection or ignore failed
-tests to obtain a passing release gate. Manual runs upload artifacts but do not
-create a GitHub release; a matching version tag creates a draft.
+For a docs-only commit being considered for release, manually run the **CI**
+and **Executables** workflows on the reviewed branch before tagging, then
+inspect both platform artifacts, package installation, and results. Do not
+remove protection or ignore failed tests to obtain a passing release gate.
+Manual executable runs upload artifacts but do not create a GitHub release;
+a matching version tag starts the release workflow.
 
 ## Before tagging a release
 
@@ -51,10 +52,14 @@ create a GitHub release; a matching version tag creates a draft.
 
 ## Tagged build and draft review
 
-Push a version tag pointing at the reviewed `main` commit. The **Executables**
-workflow checks the tag against the package version, audits dependencies, runs
-offline/lint/type gates, builds/tests both executables, and builds wheel/source
-distributions. The release job only runs after platform checks succeed.
+Push a version tag pointing at the reviewed `main` commit. The **Release**
+workflow calls the reusable **CI** and **Executables** workflows for that tag.
+CI runs offline/lint/type gates and dependency audits, builds wheel/source
+distributions, and checks isolated wheel installation. Executables checks the
+tag against the package version and builds/tests both native executables.
+The publishing job only runs after both workflows succeed, then combines
+their artifacts and creates build-provenance attestations. Write permissions
+are limited to that publishing job.
 
 The workflow creates a **draft**, not a public release, containing:
 

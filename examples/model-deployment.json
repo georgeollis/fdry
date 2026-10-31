@@ -1,0 +1,14 @@
+{
+  "sku": {
+    "name": "GlobalStandard",
+    "capacity": 1
+  },
+  "properties": {
+    "model": {
+      "format": "OpenAI",
+      "name": "<CATALOG_MODEL>",
+      "version": "<MODEL_VERSION>"
+    },
+    "versionUpgradeOption": "NoAutoUpgrade"
+  }
+}
