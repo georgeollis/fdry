@@ -36,6 +36,7 @@ markdown_extensions:
 
 nav:
   - Overview: index.md
+  - Workflow examples: workflows.md
   - CLI reference: cli.md
   - Request files: request-bodies.md
   - Release guide: releasing.md

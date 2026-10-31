@@ -1,0 +1,8 @@
+type: AzureSearch
+connectionName: <SEARCH_CONNECTION>
+indexName: <SEARCH_INDEX>
+description: Reference to an existing documentation search index.
+fieldMapping:
+  contentFields: [<CONTENT_FIELD>]
+  titleField: <TITLE_FIELD>
+  urlField: <URL_FIELD>

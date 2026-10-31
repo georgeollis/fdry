@@ -1,8 +1,9 @@
 # fdry
 
-An independent, open-source Python command-line interface for **Microsoft Foundry**.
-Built on the Microsoft Foundry Python SDK and Azure management SDK. Not an official
-Microsoft product.
+`fdry` is an independent, open-source command-line interface for **Microsoft Foundry**.
+Manage agents, model deployments, projects, and related resources through the
+Microsoft Foundry and Azure management SDKs. Available as a Python package or
+standalone Windows/Linux executable. This is not an official Microsoft product.
 
 [![CI](https://github.com/georgeollis/fdry/actions/workflows/ci.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/ci.yml)
 [![Executables](https://github.com/georgeollis/fdry/actions/workflows/binary.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/binary.yml)
@@ -11,45 +12,30 @@ Microsoft product.
 
 ## Documentation
 
-The searchable site is **[georgeollis.github.io/fdry](https://georgeollis.github.io/fdry/)**.
-The documentation theme uses a logo-free reference layout with section navigation, on-page contents,
-search, and light/dark/system color modes.
+Documentation is available at **[georgeollis.github.io/fdry](https://georgeollis.github.io/fdry/)**.
 
-[CLI reference](docs/cli.md) covers every command, option, default, accepted
-CLI choice, and configuration value.
-[Request-body reference](docs/request-bodies.md) explains every field in the
-bundled YAML/JSON examples, provisioning defaults, and advanced schema references.
-[Adding properties](docs/request-bodies.md#adding-properties-to-a-request-file)
-shows how to extend a template, find supported fields, and check the result.
+| Guide | Purpose |
+|-------|---------|
+| [Workflow examples](docs/workflows.md) | Complete workflows for structured agent responses, web research, model deployment, and search index references. |
+| [CLI reference](docs/cli.md) | Commands, options, defaults, output formats, and configuration precedence. |
+| [Request-body reference](docs/request-bodies.md) | SDK/API schemas, bundled example fields, and request-model serialization. |
+| [Release guide](docs/releasing.md) | Platform requirements, installation artifacts, and checksum/provenance verification. |
 
-The YAML/JSON files in `examples` use the corresponding SDK/API request bodies,
-not a separate CLI configuration schema. Use documented API field names to
-configure agents, tools, model deployments, and other supported resources.
-The [request-body guide](docs/request-bodies.md#sdkapi-request-bodies) names the
-SDK operations and shows how to generate files directly from SDK request models.
-Replace placeholders before submitting; service support and permissions still apply.
+The files in `examples` use SDK/API request field names. The
+[request-body reference](docs/request-bodies.md#sdkapi-request-bodies) documents
+their schemas and shows how to serialize SDK request models.
 
 ## Support and repository safeguards
 
 | Distribution | Supported/tested target |
 |--------------|-------------------------|
-| Python package | Windows and Linux; CI tests Python **3.10, 3.13, and 3.15**. Python 3.10+ is required. |
+| Python package | Windows and Linux; requires Python 3.10 or newer. |
 | Windows executable | x86-64; bundles Python 3.13. No Python installation is needed. |
 | Linux executable | x86-64, built on Ubuntu 22.04; glibc 2.35+ and an executable temporary directory are required. |
 | Other standalone targets | No macOS, ARM64, or Alpine/musl binaries are supplied. |
 
-`main` requires pull requests, passing quality/security/documentation gates,
-resolved conversations, and linear history; force pushes and deletion are blocked.
-Dependencies are locked with hashes, actions are commit-pinned, and CI includes
-audits for every tested interpreter, CodeQL, package-install checks, and both
-standalone builds. Dependabot proposes updates; secret scanning and push
-protection are enabled. Documentation-only changes keep documentation and
-security checks but skip the CLI test matrix, packages, audits, and executables.
-Mixed changes, CI/tooling changes, release tags, and manual runs still receive
-full validation. Required checks are not removed or bypassed.
-
 See [SECURITY.md](SECURITY.md) for security reporting,
-[CONTRIBUTING.md](CONTRIBUTING.md) for development, and the
+[CONTRIBUTING.md](CONTRIBUTING.md) for development and repository checks, and the
 [release guide](docs/releasing.md) for builds and artifact verification.
 
 ## Install
@@ -114,8 +100,10 @@ For local development, install Azure CLI and sign in:
 
 ```powershell
 az login
-fdry auth status
-fdry config set endpoint "https://<ACCOUNT>.services.ai.azure.com/api/projects/<PROJECT>"
+fdry --profile "<PROFILE>" config set endpoint "https://<ACCOUNT>.services.ai.azure.com/api/projects/<PROJECT>"
+fdry --profile "<PROFILE>" config show
+fdry --profile "<PROFILE>" auth status
+fdry --profile "<PROFILE>" -o table model list
 ```
 
 Authentication uses `DefaultAzureCredential`, so environment-based service
@@ -127,10 +115,10 @@ Foundry data-plane roles and Azure resource-management permissions separately.
 Management commands need additional context:
 
 ```powershell
-fdry config set subscription "<SUBSCRIPTION_ID>"
-fdry config set resource_group "<RESOURCE_GROUP>"
-fdry config set account "<ACCOUNT>"
-fdry config set project "<PROJECT>"
+fdry --profile "<PROFILE>" config set subscription "<SUBSCRIPTION_ID>"
+fdry --profile "<PROFILE>" config set resource_group "<RESOURCE_GROUP>"
+fdry --profile "<PROFILE>" config set account "<ACCOUNT>"
+fdry --profile "<PROFILE>" config set project "<PROJECT>"
 ```
 
 Profiles are stored in `~/.fdry/config.json`. Use `--profile <PROFILE>` or
@@ -150,6 +138,10 @@ Settings resolve in this order: **command-line flag > environment variable > sav
 The endpoint selects the project for data-plane operations. `--project` selects
 the project for management-plane connection writes; keep them aligned when
 working with one project. Project CRUD instead uses its command's `--name`.
+
+Use the same explicit profile for a workflow. Profiles isolate saved resource
+settings, not credentials or environment variables; check effective settings
+before modifying resources.
 
 ## Commands
 
@@ -179,16 +171,19 @@ Redaction is best-effort, not a guarantee that arbitrary service data is non-sen
 
 ### Agents and models
 
+With an existing model deployment, create a focused agent and use the returned
+version for reproducible invocation:
+
 ```powershell
-fdry agent list
-fdry model list
-fdry project list
-fdry agent create --name "<AGENT>" --model "<DEPLOYMENT>" --instructions "You are a helpful assistant."
-fdry agent invoke --name "<AGENT>" --input "Hello"
-fdry model invoke --name "<DEPLOYMENT>" --input "Hello" --api responses
-fdry model invoke --name "<DEPLOYMENT>" --input "Hello" --api chat
-fdry model embeddings --name "<EMBEDDING_DEPLOYMENT>" --input "Some text"
+fdry --profile "<PROFILE>" agent create --name "<AGENT>" --model "<MODEL_DEPLOYMENT>" --instructions "Summarize operational incidents. Separate observed facts from hypotheses and recommend one next diagnostic step."
+fdry --profile "<PROFILE>" agent show --name "<AGENT>" --version "<RETURNED_VERSION>"
+fdry --profile "<PROFILE>" agent invoke --name "<AGENT>" --version "<RETURNED_VERSION>" --input "Requests began returning rate-limit errors immediately after traffic doubled. Summarize the incident and recommend the next check."
+fdry --profile "<PROFILE>" model invoke --name "<MODEL_DEPLOYMENT>" --input "Explain the difference between model deployment capacity and per-request token limits." --api responses
 ```
+
+For application integration, the [structured support-triage example](docs/workflows.md#return-a-structured-support-classification)
+defines a JSON response schema and demonstrates exit-code handling, version
+pinning, and response parsing.
 
 `model invoke` selects the protocol with `--api responses|chat`; Responses is the
 default when the flag is omitted. Choose a protocol supported by your deployment.
@@ -207,10 +202,10 @@ Agent `create` also updates an existing agent by creating a new immutable versio
 already exist. Resource creation does not assign RBAC roles automatically.
 
 ```powershell
-fdry account create --location "<REGION>"
-fdry project create --name "<PROJECT>" --location "<REGION>"
-fdry model catalog --location "<REGION>"
-fdry model create --name "<DEPLOYMENT>" --model "<CATALOG_MODEL>" --model-version "<MODEL_VERSION>" --sku "<SKU>" --capacity 1
+fdry --profile "<PROFILE>" account create --location "<REGION>"
+fdry --profile "<PROFILE>" project create --name "<PROJECT>" --location "<REGION>"
+fdry --profile "<PROFILE>" model catalog --location "<REGION>"
+fdry --profile "<PROFILE>" model create --name "<DEPLOYMENT>" --model "<CATALOG_MODEL>" --model-version "<MODEL_VERSION>" --sku "<SKU>" --capacity 1
 ```
 
 `account create` defaults to an AI Services account with project management,
@@ -220,24 +215,23 @@ options to send an advanced ARM request body, including network settings.
 Provisioning waits for the management SDK's long-running operation to complete.
 Quota and billing units for `--capacity` depend on the model and SKU.
 
-`model create` deploys a catalog model through the Cognitive Services deployment
-API; it does not train model weights or cover every serverless/managed-compute
-offering in the wider model catalog.
+`model create` provisions a catalog-model deployment through the Cognitive
+Services management API. See the [deployment workflow](docs/workflows.md#deploy-a-model-with-an-explicit-upgrade-policy)
+for model selection, capacity, and upgrade-policy configuration.
 
 ### Definitions, connections, and toolboxes
 
 Copy examples to ignored `*.local.yaml` or `*.local.json` files and replace
 placeholders before using them. See the [field reference](docs/request-bodies.md)
-for types, required values, and where to obtain each value. The following
-commands show which command consumes each template:
+for field types and required values.
 
 ```powershell
 Copy-Item examples\prompt-agent-web-search.yaml examples\prompt-agent-web-search.local.yaml
 Copy-Item examples\model-deployment.json examples\model-deployment.local.json
 # Replace placeholders and review settings in both local files before submitting.
-fdry model create --name "<MODEL_DEPLOYMENT>" --file examples\model-deployment.local.json
-fdry agent create --name "<AGENT>" --file examples\prompt-agent-web-search.local.yaml
-fdry agent versions --name "<AGENT>"
+fdry --profile "<PROFILE>" model create --name "<MODEL_DEPLOYMENT>" --file examples\model-deployment.local.json
+fdry --profile "<PROFILE>" agent create --name "<AGENT>" --file examples\prompt-agent-web-search.local.yaml
+fdry --profile "<PROFILE>" agent versions --name "<AGENT>"
 ```
 
 The model body configures catalog model/version, SKU, capacity, and version
@@ -245,17 +239,17 @@ upgrade policy. The agent body configures instructions, web search, description,
 and metadata; set `definition.model` to the model **deployment** name, not its
 catalog identifier. See [agent configuration](docs/request-bodies.md#example-configure-an-agent-with-web-search)
 and [model configuration](docs/request-bodies.md#model-deploymentjson) for exact
-SDK models and serialization examples. The minimal `prompt-agent.yaml` omits
-tools when web search is not needed or supported.
+SDK models and serialization examples. Use `prompt-agent.yaml` for an agent
+without tools.
 
 Other complete bodies can be submitted the same way after creating and editing
 local copies of the corresponding examples:
 
 ```powershell
-fdry agent create --name "<HOSTED_AGENT>" --file examples\hosted-agent.local.yaml
-fdry connection create --name "<CONNECTION>" --file examples\connection.local.yaml
-fdry toolbox create --name "<TOOLBOX>" --file examples\toolbox.local.yaml
-fdry toolbox publish --name "<TOOLBOX>" --version "<VERSION>"
+fdry --profile "<PROFILE>" agent create --name "<HOSTED_AGENT>" --file examples\hosted-agent.local.yaml
+fdry --profile "<PROFILE>" connection create --name "<CONNECTION>" --file examples\connection.local.yaml
+fdry --profile "<PROFILE>" toolbox create --name "<TOOLBOX>" --file examples\toolbox.local.yaml
+fdry --profile "<PROFILE>" toolbox publish --name "<TOOLBOX>" --version "<VERSION>"
 ```
 
 Hosted-agent creation registers an image-based agent version. It does **not**
@@ -274,13 +268,14 @@ for full request schemas.
 ### Datasets, evaluations, and fine-tuning
 
 ```powershell
-fdry dataset upload --name "<DATASET>" --version "<VERSION>" --path "<LOCAL_FILE>"
-fdry evaluation create --file examples\evaluation.json
-fdry file upload --path "<TRAINING_JSONL>" --purpose fine-tune
-fdry fine-tuning create --file examples\fine-tuning.json
-fdry fine-tuning show --id "<JOB_ID>"
+fdry --profile "<PROFILE>" dataset upload --name "<DATASET>" --version "<VERSION>" --path "<LOCAL_FILE>"
+fdry --profile "<PROFILE>" evaluation create --file examples\evaluation.local.json
+fdry --profile "<PROFILE>" file upload --path "<TRAINING_JSONL>" --purpose fine-tune
+fdry --profile "<PROFILE>" fine-tuning create --file examples\fine-tuning.local.json
+fdry --profile "<PROFILE>" fine-tuning show --id "<JOB_ID>"
 ```
 
+Create and edit local copies of the evaluation and fine-tuning examples.
 Use the uploaded file ID in the fine-tuning definition. Fine-tuning and
 evaluation runs are asynchronous: creation returns the job/run, not a completed
 training/evaluation result. Check status with `show`. Training formats, methods,
@@ -292,7 +287,7 @@ or build the underlying search index.
 ### Other APIs
 
 ```powershell
-fdry rest "agents?api-version=v1"
+fdry --profile "<PROFILE>" rest "agents?api-version=v1"
 ```
 
 Use `--method POST --file <BODY_FILE>` for request bodies. Paths must remain
@@ -353,17 +348,14 @@ packaging\               Standalone executable build specification
 examples\                Placeholder-only resource definitions
 ```
 
-Dependency direction is `cli -> commands -> core -> SDK`. Resource modules do not
-import each other. There is no custom HTTP/authentication stack, generic resource
-dispatcher, or extra service layer that simply mirrors SDK methods. Add one only
-when a real cross-command domain workflow justifies it.
+Dependency direction is `cli -> commands -> core -> SDK`. Resource command
+modules call the corresponding SDK operations; shared modules handle profile
+persistence, client lifetimes, request documents, and output serialization.
 
 Contract tests cover SDK request serialization and pagination.
 CI runs on Windows and Linux with Python 3.10, 3.13, and 3.15.
 
-Contributions should keep resource behavior explicit, preserve structured output
-and failure exit codes, and include focused behavior or SDK-contract tests.
-Run the commands above before opening a pull request.
+See [contribution requirements](CONTRIBUTING.md) for validation and review guidance.
 
 ### Build and release standalone executables
 

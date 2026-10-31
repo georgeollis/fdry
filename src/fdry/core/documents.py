@@ -35,10 +35,24 @@ class DocumentLoader(yaml.SafeLoader):
         return super().construct_mapping(node, deep=deep)
 
 
+def _json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"Duplicate object key: {key}.")
+        result[key] = value
+    return result
+
+
 def load_document(path: Path) -> dict[str, Any]:
     try:
-        value: object = yaml.load(path.read_text(encoding="utf-8"), Loader=DocumentLoader)
-    except (OSError, UnicodeError, yaml.YAMLError) as exc:
+        text = path.read_text(encoding="utf-8-sig")
+        value: object = (
+            json.loads(text, object_pairs_hook=_json_object)
+            if path.suffix.lower() == ".json"
+            else yaml.load(text, Loader=DocumentLoader)
+        )
+    except (OSError, UnicodeError, ValueError, yaml.YAMLError) as exc:
         raise click.BadParameter(f"Cannot read {path}: {exc}", param_hint="--file") from exc
     if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):
         raise click.BadParameter("Expected a JSON/YAML object.", param_hint="--file")

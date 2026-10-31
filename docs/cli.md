@@ -4,6 +4,8 @@ This reference covers `fdry` commands and CLI values. Azure resource
 names, model catalogs, regions, SKUs, protocol versions, and request-body
 subtypes are service-defined, not fixed enumerations maintained by `fdry`.
 See [request bodies](request-bodies.md) for YAML/JSON fields and source schemas.
+For complete tasks with prerequisites and verification steps, use the
+[workflow examples](workflows.md).
 
 ## Syntax and help
 
@@ -89,7 +91,8 @@ The config format is:
 
 Profile names are user-chosen strings; the five setting keys above are the only
 accepted setting keys. Missing files mean no saved profiles. Invalid config
-files cause an error rather than being silently overwritten.
+files, including blank saved values, cause an error rather than being silently
+overwritten. UTF-8 configuration files may include a byte-order mark.
 
 ## Authentication and required context
 
@@ -305,6 +308,8 @@ and missing settings, invalid input, or usage errors exit `2`. Confirmation
 cancellation is nonzero. Azure and OpenAI SDK errors go to stderr.
 Some invalid data is only rejected by the service; parsing a file successfully
 does not validate all Azure schema constraints.
+Non-finite numbers in service responses cause a serialization error in every
+output format rather than producing invalid or inconsistent output.
 
 There is no dry-run, generic retry flag, output query language, automatic RBAC
 assignment, or resource-group creation command. Resource provisioning and

@@ -8,7 +8,7 @@ build-provenance attestations.
 
 | Distribution | Platform | Python |
 |--------------|----------|--------|
-| Python package | Windows and Linux | Requires 3.10+; CI covers 3.10, 3.13, and 3.15. |
+| Python package | Windows and Linux | Requires Python 3.10 or newer. |
 | Windows executable | Windows x86-64 | Bundled Python 3.13. |
 | Linux executable | Linux x86-64, glibc 2.35+; built on Ubuntu 22.04 | Bundled Python 3.13. |
 
@@ -76,6 +76,24 @@ Review the workflow identity, commit, version output, checksums, and provenance
 before publishing the draft. Publishing is a separate maintainer action. Existing tags
 and published assets must not be overwritten. PyPI publishing is separate
 from this workflow.
+
+## Version 0.1.1 changes
+
+Version 0.1.1 improves request parsing, configuration validation, output
+consistency, and workflow documentation:
+
+- JSON request files preserve scientific-notation numbers as numbers rather
+  than converting them to strings. Files ending in `.json` now require JSON
+  syntax; use `.yaml` or `.yml` for YAML bodies.
+- Request and configuration files accept a UTF-8 byte-order mark.
+- Blank saved settings are rejected without overwriting the configuration.
+  Blank management context fails before SDK clients are created.
+- Non-finite response values are rejected consistently for JSON, YAML, and
+  table output.
+- SDK-backed structured-agent and search-index examples include prerequisites,
+  version verification, response handling, and focused offline CI checks.
+- Installation requirements are stated separately from the Python versions
+  tested in CI.
 
 ## Consumer verification
 

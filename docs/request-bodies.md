@@ -21,6 +21,9 @@ fine-tuning body parameters. Links to the authoritative service schemas cover
 advanced fields and discriminated subtypes; `fdry` does not maintain a separate,
 exhaustive copy of every Azure API schema.
 
+For complete tasks, including resource verification and response handling,
+see the [workflow examples](workflows.md).
+
 ### Choose the SDK operation
 
 | CLI command | SDK operation | Request schema |
@@ -29,6 +32,7 @@ exhaustive copy of every Azure API schema.
 | `fdry model create` | `CognitiveServicesManagementClient.deployments.begin_create_or_update` ([reference](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.operations.deploymentsoperations)) | [Deployment](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.models.deployment), with `sku` and `properties.model`. |
 | `fdry toolbox create` | `AIProjectClient.toolboxes.create_version` ([reference](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.operations.toolboxesoperations)) | Version body with `tools`; each entry uses a [ToolboxTool](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.toolboxtool) subtype. |
 | `fdry connection create` | `CognitiveServicesManagementClient.project_connections.create` ([reference](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.operations.projectconnectionsoperations)) | ARM connection body with `properties`, selected by `authType` and `category`; see [connection fields](#connectionyaml). |
+| `fdry index create` | `AIProjectClient.indexes.create_or_update` ([reference](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.operations.indexesoperations)) | [AzureAISearchIndex](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.azureaisearchindex) and [FieldMapping](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.fieldmapping) for an existing search index reference. |
 | `fdry evaluation create` | `OpenAI.evals.create` | [EvalCreateParams](https://github.com/openai/openai-python/blob/main/src/openai/types/eval_create_params.py). |
 | `fdry fine-tuning create` | `OpenAI.fine_tuning.jobs.create` | [JobCreateParams](https://github.com/openai/openai-python/blob/main/src/openai/types/fine_tuning/job_create_params.py). |
 
@@ -39,13 +43,17 @@ successful deployment. Submitting a file creates or updates a real resource.
 
 ## File format and validation
 
-Every `--file` expects one JSON-compatible object, not an array or scalar.
-Files are UTF-8. YAML uses a safe loader; object keys must be strings at every
+`--file` accepts a UTF-8 JSON or YAML file containing one JSON-compatible object.
+An optional UTF-8 byte-order mark is accepted. Files ending in `.json`
+(case-insensitive) use JSON syntax, preserving scientific-notation numbers such
+as `2e-1` as numeric values. Other files use YAML syntax; use `.yaml` or `.yml`
+for YAML bodies.
+Arrays and scalar values are not valid top-level request bodies.
+YAML uses a safe loader; object keys must be strings at every
 level. Duplicate explicit keys are rejected instead of silently overwriting a
 value, including inside nested objects. Standard YAML merge-key inheritance
 can still be overridden by an explicit key.
-JSON values
-are strings, numbers, booleans, null, arrays, and objects. YAML-only values such
+JSON values are strings, numbers, booleans, null, arrays, and objects. YAML-only values such
 as timestamps and non-finite numbers are rejected if they cannot be serialized
 as strict JSON. Quote CPU quantities and other fields whose schema requires strings.
 
@@ -79,12 +87,14 @@ directly to the corresponding Foundry SDK operation.
 |----------|----------|---------------|
 | [`prompt-agent.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/prompt-agent.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint and a compatible deployed model. |
 | [`prompt-agent-web-search.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/prompt-agent-web-search.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint and a deployed model with web-search tool support. |
+| [`prompt-agent-structured.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/prompt-agent-structured.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint and a deployed model with structured-output support. |
 | [`hosted-agent.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/hosted-agent.yaml) | `fdry agent create --name <AGENT> --file <PATH>` | Project endpoint, compatible accessible image, hosted-agent support and permissions. |
 | [`toolbox.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/toolbox.yaml) | `fdry toolbox create --name <TOOLBOX> --file <PATH>` | Project endpoint and support for the selected tools. |
 | [`connection.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/connection.yaml) | `fdry connection create --name <CONNECTION> --file <PATH>` | Management settings, existing search service, appropriate permissions. |
 | [`evaluation.json`](https://github.com/georgeollis/fdry/blob/main/examples/evaluation.json) | `fdry evaluation create --file <PATH>` | Project endpoint and evaluation API support. |
 | [`fine-tuning.json`](https://github.com/georgeollis/fdry/blob/main/examples/fine-tuning.json) | `fdry fine-tuning create --file <PATH>` | Project endpoint, trainable model, uploaded training file and training permissions. |
 | [`model-deployment.json`](https://github.com/georgeollis/fdry/blob/main/examples/model-deployment.json) | `fdry model create --name <DEPLOYMENT> --file <PATH>` | Management settings, an available catalog model/version, compatible SKU and sufficient quota. |
+| [`search-index.yaml`](https://github.com/georgeollis/fdry/blob/main/examples/search-index.yaml) | `fdry index create --name <REFERENCE> --version <VERSION> --file <PATH>` | Project endpoint, an existing search connection/index, and matching index fields. |
 
 The CLI resource name is supplied separately with `--name`; do not assume the
 files name resources for you. Evaluation `name` is a display label; fine-tuning
@@ -105,7 +115,7 @@ resource subtype. Most such additions need only a file edit, not a change to
    mutually exclusive settings, and model/region restrictions.
 3. Add the property at the documented nesting level in an ignored local copy.
    Preserve existing required fields. Use request wire names and the schema
-   matching your SDK/API version, not names guessed from portal labels.
+   matching your SDK/API version rather than portal display labels.
 4. Review the complete body before submitting it. File bodies replace the
    convenience-generated body; they are not patches merged with CLI defaults.
    Read the created resource/version back and check the returned fields.
@@ -220,9 +230,9 @@ agent name; that creates another version.
 
 Object fields are not all equally extensible:
 
-| Object | Can you invent new keys? | Example |
+| Object | Are custom keys supported? | Example |
 |--------|--------------------------|---------|
-| Agent `definition` or ARM `properties` | No; use documented schema properties. | `definition.temperature` is documented; a made-up `definition.creativity` is not a substitute. |
+| Agent `definition` or ARM `properties` | No; use documented schema properties. | Use `definition.temperature` where supported; unsupported properties are not equivalent configuration options. |
 | Hosted `definition.environment_variables` | Yes, for variable names your container understands; values are strings. | `LOG_LEVEL: "INFO"` only affects an application that reads `LOG_LEVEL`. |
 | Connection `properties.metadata` | User metadata is a string-to-string map; retain any provider-required entries. | Add a workload label without removing the example's `ApiType: Azure`. |
 | Dataset/index `tags` or supported `metadata` maps | User-chosen string keys/values, subject to API limits. | A label identifies your workload; it does not change provisioning behavior. |
@@ -297,6 +307,39 @@ These are not additional `agent create` flags: put them in the body and check
 the nested schemas and model support before use.
 
 Source: [PromptAgentDefinition](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.promptagentdefinition).
+
+## prompt-agent-structured.yaml
+
+This request uses the prompt-agent fields above and adds a strict structured
+response format. The complete [workflow](workflows.md#return-a-structured-support-classification)
+shows creation, version verification, invocation, and output parsing.
+
+| Field | Type / value | Meaning |
+|-------|--------------|---------|
+| `description` | String | Human-readable description of the agent version. |
+| `definition.text` | Object | Model response configuration, separate from the CLI's `--output` option. |
+| `definition.text.format.type` | String: `json_schema` | Selects the JSON Schema response-format subtype. |
+| `definition.text.format.name` | String: `support_triage` | Response-format label, not an Azure resource name. |
+| `definition.text.format.strict` | Boolean: `true` | Requests strict adherence to the supported schema. |
+| `definition.text.format.schema` | JSON Schema object | Defines the requested response structure. |
+| `schema.type` | String: `object` | The model's response is a JSON object. |
+| `schema.properties.category` | String schema; enum `access`, `deployment`, `billing`, `other` | Application-defined classification labels. |
+| `schema.properties.priority` | String schema; enum `normal`, `urgent` | Application-defined priority labels. |
+| `schema.properties.summary`, `schema.properties.next_action` | String schemas | Issue summary and one recommended next step. |
+| `schema.required` | String array containing all four property names | Every response property is required by this schema. |
+| `schema.additionalProperties` | Boolean: `false` | Additional response properties are not permitted by this schema. |
+
+The rows starting with `schema` refer to the object nested under
+`definition.text.format.schema`. Labels and required fields are selected for
+this application; they are not fixed Foundry categories.
+
+The model must support structured outputs and the selected JSON Schema subset.
+Handle safety refusals and incomplete responses before parsing model output.
+The schema does not verify the accuracy of a classification or execute its
+recommended action.
+
+Sources: [PromptAgentDefinitionTextOptions](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.promptagentdefinitiontextoptions),
+[TextResponseFormatJsonSchema](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.textresponseformatjsonschema).
 
 ## hosted-agent.yaml
 
@@ -596,9 +639,10 @@ Sources: [DeploymentsOperations.begin_create_or_update](https://learn.microsoft.
 
 ## Dataset and index bodies
 
-No dataset/index templates are bundled. These operations forward service wire
-objects; consult the selected subtype rather than copying an SDK response with
-read-only fields back into a create request.
+These operations forward service wire objects. The bundled `search-index.yaml`
+demonstrates an existing index reference; no dataset template is bundled.
+Consult the selected request subtype rather than copying read-only response
+fields into a create request.
 
 For dataset references, `type` is `uri_file` or `uri_folder`; `dataUri` is the
 existing data URI. `connectionName` identifies the storage connection and is
@@ -622,6 +666,29 @@ Sources: [DatasetVersion](https://learn.microsoft.com/python/api/azure-ai-projec
 [AzureAISearchIndex](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.azureaisearchindex),
 [FieldMapping](https://learn.microsoft.com/python/api/azure-ai-projects/azure.ai.projects.models.fieldmapping).
 Other index subtypes have their own schema.
+
+### search-index.yaml
+
+This file supplies the body for `AIProjectClient.indexes.create_or_update`.
+Resource name and version are passed through the command's `--name` and
+`--version` options.
+
+| Field | Type / value | Meaning |
+|-------|--------------|---------|
+| `type` | String: `AzureSearch` | Selects the Azure AI Search index-reference subtype. |
+| `connectionName` | String: `<SEARCH_CONNECTION>` | Existing project connection to the search service. |
+| `indexName` | String: `<SEARCH_INDEX>` | Existing index within that service, not the Foundry reference name. |
+| `description` | String | Human-readable reference description. |
+| `fieldMapping.contentFields` | String array: `[<CONTENT_FIELD>]` | Existing text-content field names. |
+| `fieldMapping.titleField` | String: `<TITLE_FIELD>` | Existing document-title field. |
+| `fieldMapping.urlField` | String: `<URL_FIELD>` | Existing source-URL field. |
+
+The SDK's `AzureAISearchIndex.as_dict()` serializes `connection_name` to
+`connectionName`, `index_name` to `indexName`, and `field_mapping` to
+`fieldMapping`. `FieldMapping` similarly serializes field names to camelCase.
+Use fields present in your search index; remove optional title/URL mappings
+when the index does not define them.
+See the [registration workflow](workflows.md#register-an-existing-search-index).
 
 ## Advanced fields and service validation
 

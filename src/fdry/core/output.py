@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Mapping
 from datetime import date, datetime
 from enum import Enum
@@ -50,7 +51,9 @@ def plain(value: Any) -> Any:
     if isinstance(value, (date, datetime)):
         return value.isoformat()
     if isinstance(value, Enum):
-        return value.value
+        return plain(value.value)
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError("Non-finite numbers are not valid response values.")
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     raise TypeError(f"Cannot serialize {type(value).__name__}")

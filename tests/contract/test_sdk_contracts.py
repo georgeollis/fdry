@@ -6,7 +6,14 @@ from pathlib import Path
 import pytest
 import yaml
 from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import PromptAgentDefinition, WebSearchTool
+from azure.ai.projects.models import (
+    AzureAISearchIndex,
+    FieldMapping,
+    PromptAgentDefinition,
+    PromptAgentDefinitionTextOptions,
+    TextResponseFormatJsonSchema,
+    WebSearchTool,
+)
 from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 from azure.mgmt.cognitiveservices.models import (
     Deployment,
@@ -175,6 +182,72 @@ def test_model_example_matches_sdk_wire_names_and_is_forwarded(
         )
     assert result.exit_code == 0, result.output
     assert transport.bodies == [expected]
+
+
+def test_structured_agent_example_matches_sdk_and_is_forwarded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = Path(__file__).parents[2] / "examples" / "prompt-agent-structured.yaml"
+    schema = {
+        "type": "object",
+        "properties": {
+            "category": {"type": "string", "enum": ["access", "deployment", "billing", "other"]},
+            "priority": {"type": "string", "enum": ["normal", "urgent"]},
+            "summary": {"type": "string"},
+            "next_action": {"type": "string"},
+        },
+        "required": ["category", "priority", "summary", "next_action"],
+        "additionalProperties": False,
+    }
+    expected = {
+        "definition": PromptAgentDefinition(
+            model="<MODEL_DEPLOYMENT>",
+            instructions=(
+                "Classify the support request using the supplied response schema. "
+                "Mark a request urgent only when it describes an active outage or widespread "
+                "service impact. Summarize the issue and recommend one concrete next action. "
+                "Do not invent account details or claim that an action has been performed."
+            ),
+            text=PromptAgentDefinitionTextOptions(
+                format=TextResponseFormatJsonSchema(
+                    name="support_triage", schema=schema, strict=True
+                )
+            ),
+        ).as_dict(),
+        "description": "Support triage with a structured response.",
+    }
+    assert yaml.safe_load(path.read_text(encoding="utf-8")) == expected
+    transport = Transport([{"id": "agent:1", "name": "agent", "version": "1"}])
+    with AIProjectClient(ENDPOINT, Credential(), transport=transport) as client:
+        monkeypatch.setattr(Runtime, "project_client", lambda self: client)
+        result = CliRunner().invoke(cli, ["agent", "create", "-n", "agent", "--file", str(path)])
+    assert result.exit_code == 0, result.output
+    assert transport.bodies == [expected]
+
+
+def test_search_index_example_matches_sdk_wire_names_and_is_forwarded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = Path(__file__).parents[2] / "examples" / "search-index.yaml"
+    expected = AzureAISearchIndex(
+        connection_name="<SEARCH_CONNECTION>",
+        index_name="<SEARCH_INDEX>",
+        description="Reference to an existing documentation search index.",
+        field_mapping=FieldMapping(
+            content_fields=["<CONTENT_FIELD>"], title_field="<TITLE_FIELD>", url_field="<URL_FIELD>"
+        ),
+    ).as_dict()
+    assert yaml.safe_load(path.read_text(encoding="utf-8")) == expected
+    transport = Transport([{"name": "reference", "version": "1", **expected}])
+    with AIProjectClient(ENDPOINT, Credential(), transport=transport) as client:
+        monkeypatch.setattr(Runtime, "project_client", lambda self: client)
+        result = CliRunner().invoke(
+            cli,
+            ["index", "create", "-n", "reference", "--version", "1", "--file", str(path)],
+        )
+    assert result.exit_code == 0, result.output
+    assert transport.bodies == [expected]
+    assert "/indexes/reference/versions/1" in transport.requests[0].url
 
 
 @pytest.mark.parametrize(

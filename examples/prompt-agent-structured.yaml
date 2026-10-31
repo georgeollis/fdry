@@ -1,0 +1,29 @@
+definition:
+  kind: prompt
+  model: <MODEL_DEPLOYMENT>
+  instructions: >-
+    Classify the support request using the supplied response schema.
+    Mark a request urgent only when it describes an active outage or widespread
+    service impact. Summarize the issue and recommend one concrete next action.
+    Do not invent account details or claim that an action has been performed.
+  text:
+    format:
+      type: json_schema
+      name: support_triage
+      strict: true
+      schema:
+        type: object
+        properties:
+          category:
+            type: string
+            enum: [access, deployment, billing, other]
+          priority:
+            type: string
+            enum: [normal, urgent]
+          summary:
+            type: string
+          next_action:
+            type: string
+        required: [category, priority, summary, next_action]
+        additionalProperties: false
+description: Support triage with a structured response.
