@@ -29,7 +29,7 @@ their schemas and shows how to serialize SDK request models.
 
 | Distribution | Supported/tested target |
 |--------------|-------------------------|
-| Python package | Windows and Linux; CI tests Python **3.10, 3.13, and 3.15**. Python 3.10+ is required. |
+| Python package | Windows and Linux; requires Python 3.10 or newer. |
 | Windows executable | x86-64; bundles Python 3.13. No Python installation is needed. |
 | Linux executable | x86-64, built on Ubuntu 22.04; glibc 2.35+ and an executable temporary directory are required. |
 | Other standalone targets | No macOS, ARM64, or Alpine/musl binaries are supplied. |

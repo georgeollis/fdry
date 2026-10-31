@@ -16,8 +16,7 @@ This is an independent project, not an official Microsoft product.
 
 ## Install
 
-The Python package supports Python 3.10 or later, including 3.15, on Windows
-and Linux. From a source checkout:
+The package requires Python 3.10 or newer. Install it from a source checkout:
 
 ```powershell
 python -m pip install .

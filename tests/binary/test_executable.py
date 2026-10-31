@@ -75,6 +75,38 @@ def test_frozen_config_round_trip(
     assert "account" not in json.loads(result.stdout)
 
 
+def test_frozen_config_accepts_utf8_bom(
+    executable: Path, environment: dict[str, str], tmp_path: Path
+) -> None:
+    path = Path(environment["FDRY_CONFIG"])
+    path.write_text(
+        json.dumps({"profiles": {"default": {"account": "offline-account"}}}),
+        encoding="utf-8-sig",
+    )
+    result = run(executable, environment, tmp_path, "config", "set", "resource_group", "group")
+    assert result.returncode == 0, result.stderr
+    result = run(executable, environment, tmp_path, "config", "show")
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {
+        "profile": "default",
+        "account": "offline-account",
+        "resource_group": "group",
+    }
+
+
+def test_frozen_json_request_rejects_yaml_before_authentication(
+    executable: Path, environment: dict[str, str], tmp_path: Path
+) -> None:
+    path = tmp_path / "tools.json"
+    path.write_text("tools: [{type: web_search}]", encoding="utf-8")
+    result = run(
+        executable, environment, tmp_path, "toolbox", "create", "-n", "tools", "--file", str(path)
+    )
+    assert result.returncode == 2, result.stderr
+    assert "Cannot read" in result.stderr
+    assert "EnvironmentCredential" not in result.stderr
+
+
 @pytest.mark.parametrize("command", sorted(leaf_commands(cli)))
 def test_frozen_command_help(
     executable: Path, environment: dict[str, str], tmp_path: Path, command: str

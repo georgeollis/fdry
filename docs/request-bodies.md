@@ -44,6 +44,10 @@ successful deployment. Submitting a file creates or updates a real resource.
 ## File format and validation
 
 `--file` accepts a UTF-8 JSON or YAML file containing one JSON-compatible object.
+An optional UTF-8 byte-order mark is accepted. Files ending in `.json`
+(case-insensitive) use JSON syntax, preserving scientific-notation numbers such
+as `2e-1` as numeric values. Other files use YAML syntax; use `.yaml` or `.yml`
+for YAML bodies.
 Arrays and scalar values are not valid top-level request bodies.
 YAML uses a safe loader; object keys must be strings at every
 level. Duplicate explicit keys are rejected instead of silently overwriting a

@@ -34,14 +34,15 @@ def read_config() -> ConfigData:
     if not path.exists():
         return {"profiles": {}}
     try:
-        value: object = json.loads(path.read_text(encoding="utf-8"))
+        value: object = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as exc:
         raise click.ClickException(f"Cannot read configuration {path}: {exc}") from exc
     if not isinstance(value, dict) or not isinstance(value.get("profiles"), dict):
         raise click.ClickException(f"Invalid configuration in {path}: expected a profiles object.")
     for name, settings in value["profiles"].items():
         if not isinstance(settings, dict) or any(
-            key not in SETTING_ENV or not isinstance(item, str) for key, item in settings.items()
+            key not in SETTING_ENV or not isinstance(item, str) or not item.strip()
+            for key, item in settings.items()
         ):
             raise click.ClickException(f"Invalid configuration for profile {name!r}.")
     return {"profiles": value["profiles"]}

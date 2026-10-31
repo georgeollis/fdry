@@ -32,7 +32,7 @@ class Runtime:
 
     def require(self, key: str) -> str:
         value = self.settings.get(key)
-        if not value:
+        if not value or not value.strip():
             option = key.replace("_", "-")
             raise click.UsageError(
                 f"Set --{option}, {SETTING_ENV[key]}, or config set {key} VALUE."

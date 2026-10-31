@@ -68,6 +68,33 @@ def test_corrupt_config_is_not_overwritten(runner: CliRunner, tmp_path: Path) ->
     assert path.read_text() == "{broken"
 
 
+def test_config_accepts_utf8_bom_and_preserves_existing_settings(
+    runner: CliRunner, tmp_path: Path
+) -> None:
+    path = tmp_path / "config.json"
+    path.write_text(
+        json.dumps({"profiles": {"default": {"endpoint": ENDPOINT}}}), encoding="utf-8-sig"
+    )
+    result = runner.invoke(cli, ["config", "set", "account", "account"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(path.read_text(encoding="utf-8")) == {
+        "profiles": {"default": {"endpoint": ENDPOINT, "account": "account"}}
+    }
+
+
+@pytest.mark.parametrize("value", ["", "   "])
+def test_blank_saved_settings_are_not_overwritten(
+    runner: CliRunner, tmp_path: Path, value: str
+) -> None:
+    path = tmp_path / "config.json"
+    original = json.dumps({"profiles": {"default": {"account": value}}})
+    path.write_text(original, encoding="utf-8")
+    result = runner.invoke(cli, ["config", "set", "account", "replacement"])
+    assert result.exit_code == 1, result.output
+    assert "Invalid configuration" in result.output
+    assert path.read_text(encoding="utf-8") == original
+
+
 @pytest.mark.parametrize(
     "endpoint",
     [
@@ -95,6 +122,21 @@ def test_missing_context_is_actionable(runner: CliRunner) -> None:
     assert result.exit_code == 2
     assert "AZURE_AI_PROJECT_ENDPOINT" in result.output
     assert "Traceback" not in result.output
+
+
+@pytest.mark.parametrize("option", ["--subscription", "--resource-group", "--account"])
+def test_blank_management_context_fails_before_creating_clients(
+    runner: CliRunner, monkeypatch: pytest.MonkeyPatch, option: str
+) -> None:
+    factory = MagicMock()
+    monkeypatch.setattr("fdry.core.context.CognitiveServicesManagementClient", factory)
+    monkeypatch.setattr("fdry.core.context.DefaultAzureCredential", MagicMock())
+    values = {"--subscription": "subscription", "--resource-group": "group", "--account": "account"}
+    values[option] = "   "
+    arguments = [item for pair in values.items() for item in pair]
+    result = runner.invoke(cli, [*arguments, "account", "show"])
+    assert result.exit_code == 2, result.output
+    factory.assert_not_called()
 
 
 def test_list_consumes_every_page(runner: CliRunner, project_client: MagicMock) -> None:
@@ -143,6 +185,52 @@ def test_agent_file_preserves_tools(
     result = runner.invoke(cli, ["agent", "create", "-n", "agent", "--file", str(path)])
     assert result.exit_code == 0, result.output
     project_client.agents.create_version.assert_called_once_with("agent", body)
+
+
+@pytest.mark.parametrize("suffix", [".json", ".JSON"])
+def test_json_request_preserves_scientific_numbers(
+    runner: CliRunner, project_client: MagicMock, tmp_path: Path, suffix: str
+) -> None:
+    path = tmp_path / f"agent{suffix}"
+    path.write_text(
+        '{"definition":{"kind":"prompt","model":"deployment","temperature":2e-1,"top_p":1e0},'
+        '"metadata":{"code":"001"}}',
+        encoding="utf-8-sig",
+    )
+    project_client.agents.create_version.return_value = {"version": "1"}
+    result = runner.invoke(cli, ["agent", "create", "-n", "agent", "--file", str(path)])
+    assert result.exit_code == 0, result.output
+    project_client.agents.create_version.assert_called_once_with(
+        "agent",
+        {
+            "definition": {
+                "kind": "prompt",
+                "model": "deployment",
+                "temperature": 0.2,
+                "top_p": 1.0,
+            },
+            "metadata": {"code": "001"},
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        '{"tools": [], "tools": [{"type": "web_search"}]}',
+        '{"tools": [{"type": "web_search", "type": "mcp"}]}',
+        "tools: [{type: web_search}]",
+        '{"tools": [], "limit": NaN}',
+    ],
+)
+def test_invalid_json_request_never_calls_sdk(
+    runner: CliRunner, project_client: MagicMock, tmp_path: Path, content: str
+) -> None:
+    path = tmp_path / "tools.json"
+    path.write_text(content, encoding="utf-8")
+    result = runner.invoke(cli, ["toolbox", "create", "-n", "tools", "--file", str(path)])
+    assert result.exit_code == 2, result.output
+    project_client.toolboxes.create_version.assert_not_called()
 
 
 def test_agent_invocation_reference(runner: CliRunner, openai_client: MagicMock) -> None:
@@ -597,12 +685,21 @@ def test_output_redacts_credential_key_variants(key: str) -> None:
     assert plain({"nested": [{key: "never-print"}]}) == {"nested": [{key: "[REDACTED]"}]}
 
 
-@pytest.mark.parametrize("response", [{"value": float("nan")}, {"value": object()}])
+@pytest.mark.parametrize("output", ["json", "yaml", "table"])
+@pytest.mark.parametrize(
+    "response",
+    [
+        {"value": float("nan")},
+        {"nested": [float("inf")]},
+        {"nested": {"value": float("-inf")}},
+        {"value": object()},
+    ],
+)
 def test_unserializable_response_is_actionable(
-    runner: CliRunner, project_client: MagicMock, response: dict
+    runner: CliRunner, project_client: MagicMock, response: dict, output: str
 ) -> None:
     project_client.agents.get.return_value = response
-    result = runner.invoke(cli, ["agent", "show", "-n", "agent"])
+    result = runner.invoke(cli, ["-o", output, "agent", "show", "-n", "agent"])
     assert result.exit_code == 1
     assert "Cannot serialize the service response" in result.output
     assert isinstance(result.exception, SystemExit)
