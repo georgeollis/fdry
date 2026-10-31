@@ -32,7 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-24.04
+          - os: windows-latest
             target: windows-x64
             executable: fdry.exe
             asset: fdry-windows-x64.exe
@@ -62,29 +62,8 @@ jobs:
       - run: uv run --no-sync python -m mypy src .github/scripts
       - run: uv run --no-sync python -m pytest -q -m "not binary"
       - run: uv run --no-sync pip-audit --skip-editable
-      - name: Install Wine for Windows packaging
-        if: matrix.target == 'windows-x64'
-        shell: bash
-        run: |
-          sudo dpkg --add-architecture i386
-          curl --fail --location --retry 3 https://dl.winehq.org/wine-builds/winehq.key --output "$RUNNER_TEMP/winehq.asc"
-          echo "d965d646defe94b3dfba6d5b4406900ac6c81065428bf9d9303ad7a72ee8d1b8  $RUNNER_TEMP/winehq.asc" | sha256sum --check
-          sudo install -D -m 644 "$RUNNER_TEMP/winehq.asc" /etc/apt/keyrings/winehq.asc
-          echo "deb [signed-by=/etc/apt/keyrings/winehq.asc] https://dl.winehq.org/wine-builds/ubuntu/ noble main" | sudo tee /etc/apt/sources.list.d/winehq.list
-          sudo apt-get update
-          sudo apt-get install --yes --install-recommends winehq-stable=11.0.0.0~noble-1 xvfb xauth
-          wine --version
-      - name: Build and test Windows executable under Wine
-        if: matrix.target == 'windows-x64'
-        shell: bash
-        env:
-          WINEPREFIX: ${{ runner.temp }}/fdry-wine
-        run: xvfb-run --auto-servernum bash packaging/build-windows.sh
-      - name: Build Linux executable
-        if: matrix.target == 'linux-x64'
-        run: uv run --no-sync python -m PyInstaller --noconfirm --clean --log-level WARN (Join-Path packaging fdry.spec)
+      - run: uv run --no-sync python -m PyInstaller --noconfirm --clean --log-level WARN (Join-Path packaging fdry.spec)
       - name: Exercise standalone executable
-        if: matrix.target == 'linux-x64'
         run: |
           $env:FDRY_EXE = (Resolve-Path (Join-Path dist '${{ matrix.executable }}')).Path
           uv run --no-sync python -m pytest -q (Join-Path tests binary)
@@ -137,7 +116,7 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/')
     needs: [build, required]
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 10
     permissions:
       contents: write

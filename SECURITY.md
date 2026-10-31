@@ -13,9 +13,7 @@ There is no guaranteed response or remediation SLA.
 
 ## Support and trust boundaries
 
-There are no published stable releases yet. The initial 0.1 series remains
-pre-release software pending the [release-readiness checklist](docs/releasing.md).
-Security fixes are developed on `main`; backports are not promised.
+Security fixes are developed on `main` and distributed through GitHub Releases.
 Consumers should review dependency updates and avoid unsupported old snapshots.
 
 The CLI authenticates through Azure Identity and uses Azure/OpenAI SDKs.
@@ -29,11 +27,9 @@ environment files, and logs outside version control. Structured-output redaction
 is best-effort and does not guarantee that arbitrary service responses or error
 messages contain no sensitive information.
 
-CI runs dependency audits and CodeQL; Dependabot proposes updates. These checks
-do not establish the absence of vulnerabilities. Action commits and dependency
-hashes are pinned for reviewable build inputs, not a guarantee of byte-identical
-executables or safety of every upstream package.
+CI runs dependency audits and CodeQL; Dependabot proposes updates. Action
+commits and dependency hashes are pinned for reviewable build inputs.
 
 Tagged builds create provenance attestations and checksums. Native executables
-are not Authenticode/code-signed; do not treat an unsigned binary or an
-unreviewed workflow artifact as a trusted production release.
+are not Authenticode/code-signed. Download executables from GitHub Releases
+and verify their checksums and provenance before running them.

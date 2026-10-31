@@ -6,6 +6,11 @@ repo_name: georgeollis/fdry
 edit_uri: edit/main/docs/
 strict: true
 
+validation:
+  links:
+    anchors: warn
+    unrecognized_links: warn
+
 theme:
   name: mkdocs
   custom_dir: overrides

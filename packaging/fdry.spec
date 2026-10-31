@@ -1,4 +1,4 @@
-"""Build with the target platform's Python, natively or under Wine."""
+"""Build a standalone console executable on the target operating system."""
 
 from pathlib import Path
 

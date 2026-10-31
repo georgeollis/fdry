@@ -2,21 +2,15 @@
 
 ## Origin and scope
 
-The six files in [`examples`](https://github.com/georgeollis/fdry/tree/main/examples) are AI-assisted, repository-authored
-templates created for this CLI. They were not downloaded from Microsoft, exported
-from an Azure environment, or supplied by the Foundry service. Their field names
-follow the SDK/API shapes linked below. They are illustrative, not Microsoft
-reference deployments or a promise that every combination works in every region.
+The six files in [`examples`](https://github.com/georgeollis/fdry/tree/main/examples)
+were authored for this CLI with AI assistance. They use the SDK/API schemas
+linked below and contain placeholders for your own resource settings.
 
 This document covers **every field and literal in the six bundled templates**,
 all CLI-generated provisioning fields, and the directly supported evaluation/
 fine-tuning body parameters. Links to the authoritative service schemas cover
 advanced fields and discriminated subtypes; `fdry` does not maintain a separate,
 exhaustive copy of every Azure API schema.
-
-The examples are covered by offline request/serialization checks, not a
-successful live deployment of every template. Local parsing or SDK serialization
-does not establish model, region, RBAC, network, or container compatibility.
 
 ## File format and validation
 
@@ -176,11 +170,9 @@ request body, metadata map, tag, or environment-variable map.
 
 ### Validation and when CLI changes are needed
 
-An editor can check YAML/JSON syntax, but parsing does not prove a property's
-schema, model compatibility, permissions, or service availability. `fdry` has
-no schema-validation or dry-run command. **`create --file` submits a real
-request** and can incur charges. Use an appropriately isolated Azure target
-for integration testing.
+Check YAML/JSON syntax with your editor and use the linked API schemas for
+accepted properties and types. **`create --file` submits a real request** and
+can incur charges; it is not a dry run.
 
 If a request fails, check the exact field path and wire spelling, JSON type,
 required sibling properties, discriminator (`kind`, `type`, or `authType`),
@@ -440,7 +432,7 @@ generates:
 | `properties.model.version` | String: `--model-version` value | Explicit catalog model version, not the deployment name. |
 
 Source: [Deployment model](https://learn.microsoft.com/python/api/azure-mgmt-cognitiveservices/azure.mgmt.cognitiveservices.models.deployment).
-The CLI does not enumerate every format or SKU or validate their compatibility.
+Choose a model format and SKU supported by the selected model and Azure region.
 
 ## Dataset and index bodies
 

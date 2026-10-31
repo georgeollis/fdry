@@ -9,15 +9,11 @@ Microsoft product.
 [![Documentation](https://github.com/georgeollis/fdry/actions/workflows/pages.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/pages.yml)
 [![Security](https://github.com/georgeollis/fdry/actions/workflows/security.yml/badge.svg)](https://github.com/georgeollis/fdry/actions/workflows/security.yml)
 
-**Status:** initial implementation. This is not yet full Foundry portal parity.
-Preview APIs, model availability, quota, and hosted-agent support depend on the
-selected region, subscription, and service rollout.
-Production hardening does not establish live Azure compatibility. See
-[release readiness and support](docs/releasing.md) for gates and remaining limitations.
-
 ## Documentation
 
 The searchable site is **[georgeollis.github.io/fdry](https://georgeollis.github.io/fdry/)**.
+The documentation theme uses a logo-free reference layout with section navigation, on-page contents,
+search, and light/dark/system color modes.
 
 [CLI reference](docs/cli.md) covers every command, option, default, accepted
 CLI choice, and configuration value.
@@ -36,7 +32,7 @@ placeholders before submitting them; service support and permissions still apply
 | Distribution | Supported/tested target |
 |--------------|-------------------------|
 | Python package | Windows and Linux; CI tests Python **3.10, 3.13, and 3.15**. Python 3.10+ is required. |
-| Windows executable | x86-64; new builds bundle Python 3.15 and are built/tested on Linux under Wine. Native Windows artifact validation remains a release limitation. No Python installation is needed. |
+| Windows executable | x86-64; bundles Python 3.13. No Python installation is needed. |
 | Linux executable | x86-64, built on Ubuntu 22.04; glibc 2.35+ and an executable temporary directory are required. |
 | Other standalone targets | No macOS, ARM64, or Alpine/musl binaries are supplied. |
 
@@ -47,25 +43,25 @@ audits for every tested interpreter, CodeQL, package-install checks, and both
 standalone builds. Dependabot proposes updates; secret scanning and push
 protection are enabled. Documentation-only changes keep documentation and
 security checks but skip the CLI test matrix, packages, audits, and executables.
+Mixed changes, CI/tooling changes, release tags, and manual runs still receive
+full validation. Required checks are not removed or bypassed.
 
-These safeguards do **not** make this a certified stable Azure client.
-No stable/PyPI release or native code signing is configured, and representative
-live Azure validation remains outstanding. See [SECURITY.md](SECURITY.md),
-[CONTRIBUTING.md](CONTRIBUTING.md), and the [release checklist](docs/releasing.md).
+See [SECURITY.md](SECURITY.md) for security reporting,
+[CONTRIBUTING.md](CONTRIBUTING.md) for development, and the
+[release guide](docs/releasing.md) for builds and artifact verification.
 
 ## Install
 
-**[v0.1.0 pre-release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0)**
+**[Download v0.1.0](https://github.com/georgeollis/fdry/releases/tag/v0.1.0)**
 provides Windows/Linux executables, Python wheel/source archives, checksums, and
-build-provenance attestations. It is an initial, offline-validated alpha, not a
-stable production release.
+build-provenance attestations.
 
 ### Windows executable
 
 The standalone x64 build bundles Python and its dependencies; users do **not**
 need to install Python. It is a portable executable, not an MSI installer.
 Download `fdry-windows-x64.exe` and `SHA256SUMS` from the
-[pre-release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0).
+[release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0).
 Compare the hash, then rename the executable:
 
 ```powershell
@@ -79,8 +75,7 @@ The executable has the same commands and configuration as the Python package.
 Azure CLI is not bundled: install it separately for `az login`, or use supported
 environment/workload/managed identity credentials.
 
-Pre-release builds are currently unsigned;
-code signing and installer/package-manager distribution are not configured.
+The Windows executable is unsigned. Windows may display a SmartScreen prompt.
 
 ### From source
 
@@ -91,7 +86,7 @@ python -m pip install .
 fdry --help
 ```
 
-The package is not yet published to PyPI. Installing from source creates the
+The package is not published to PyPI. Installing from source creates the
 `fdry` executable; `python -m fdry` also works.
 
 ### Linux executable
@@ -101,16 +96,15 @@ The Linux x86-64 build bundles Python and dependencies. It is built on Ubuntu
 are not supplied. The executable needs a writable/executable temporary directory
 for PyInstaller extraction and a working system CA trust store.
 
-Download `fdry-linux-x64` and `SHA256SUMS` from the pre-release.
+Download `fdry-linux-x64` and `SHA256SUMS` from the release.
 Check its SHA-256 hash against the matching entry before running it, then grant
 execute permission and rename it to `fdry` if desired. Linux users can use
 `sha256sum` to verify the hash and `chmod +x` to grant execute permission.
 Add its directory to `PATH`, or invoke it by its full path. Azure CLI remains
 a separate installation for interactive authentication.
 
-Release assets are unsigned native executables. Tagged workflows produce GitHub
-build-provenance attestations; these are distinct from Windows Authenticode
-signatures. Verification instructions are in the [release guide](docs/releasing.md).
+Releases include SHA-256 checksums and GitHub build-provenance attestations.
+Verification instructions are in the [release guide](docs/releasing.md).
 
 ## Authenticate and configure
 
@@ -285,16 +279,13 @@ relative to the configured project; external URLs and traversal are rejected.
 Supply the API version required by the operation. Use `--preview` to opt in to
 preview features supported by the SDK; preview routes can also require
 service-specific feature headers, which this REST command does not configure.
-Skills, routines, memory stores, red-team scans, tracing, networking, RBAC
-management, and hosted-agent build/deploy orchestration do not yet have dedicated
-command groups. `rest` is not a substitute for all Azure management APIs.
 
 ## Safety and errors
 
 Delete commands prompt for confirmation; `--yes` bypasses it for automation.
 Account/project deletion also removes their child resources.
 Create/update/publish/invoke commands do not prompt and may overwrite mutable
-resources or incur charges. Do not run them against production without review.
+resources or incur charges. Review the target and request before running them.
 
 Service failures return a nonzero exit status and an error on stderr. Missing
 settings, invalid documents, and invalid arguments are reported as usage errors.
@@ -319,6 +310,9 @@ CI pins uv and uses the committed `uv.lock` for platform-specific dependency
 versions and hashes. End-user source installation still supports pip, but pip
 resolves the package's declared dependency ranges rather than consuming this lock.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the development and pull-request workflow.
+For documentation-only edits, use the
+[documentation-site checks](CONTRIBUTING.md#documentation-site) instead of the
+package and executable build commands.
 
 ```text
 src\fdry\
@@ -343,10 +337,8 @@ import each other. There is no custom HTTP/authentication stack, generic resourc
 dispatcher, or extra service layer that simply mirrors SDK methods. Add one only
 when a real cross-command domain workflow justifies it.
 
-Tests never create Azure resources. Contract tests exercise the installed Azure
-SDKs against an offline transport; they are not live-service integration tests.
-CI runs on Windows and Linux with Python 3.10, 3.13, and 3.15. Live Azure validation is
-still required before treating a release as production-ready.
+Contract tests cover SDK request serialization and pagination.
+CI runs on Windows and Linux with Python 3.10, 3.13, and 3.15.
 
 Contributions should keep resource behavior explicit, preserve structured output
 and failure exit codes, and include focused behavior or SDK-contract tests.
@@ -354,15 +346,11 @@ Run the commands above before opening a pull request.
 
 ### Build and release standalone executables
 
-Both executable jobs use Linux runners. Windows packaging runs Windows Python
-3.15.2 and PyInstaller under Wine 11 on Ubuntu 24.04; Linux packaging uses native
-Python 3.13 on Ubuntu 22.04. See the [Linux/Wine build instructions](docs/releasing.md#building-the-windows-executable-on-linux).
-PyInstaller does not natively cross-compile.
-
-Native Windows builds remain possible with Python 3.15 x64:
+Build on the target OS with Python 3.13 x64; PyInstaller does not cross-compile.
+For Windows:
 
 ```powershell
-uv sync --locked --all-extras --python 3.15
+uv sync --locked --all-extras --python 3.13
 uv run --no-sync python -m PyInstaller --noconfirm --clean --log-level WARN packaging\fdry.spec
 $env:FDRY_EXE = (Resolve-Path dist\fdry.exe).Path
 uv run --no-sync python -m pytest -q tests\binary
@@ -383,8 +371,9 @@ A tag must match the package version, for example `v0.1.0`.
 Tagged builds create a **draft GitHub release** with Windows/Linux x64 executables,
 Python wheel/source distributions, SHA-256 checksums, and the MIT license.
 Maintainers review and publish drafts separately. Runtime-changing pull requests
-and manual runs upload workflow artifacts without creating a release. No release is created by
-a local build. See the [release checklist](docs/releasing.md) before tagging.
+and manual runs upload workflow artifacts without creating a release. No release
+is created by a local build. See the [release checklist](docs/releasing.md) before
+tagging.
 
 ## License
 
