@@ -1,50 +1,53 @@
-# Release readiness and supported platforms
+# Releases and supported platforms
 
-## Current assurance
+## Supported platforms
 
-The repository is hardened for reviewed changes, locked dependency installation,
-offline contract testing, and gated Windows/Linux builds. That is **not**
-certification of production behavior against Azure. The package remains marked
-alpha until maintainers have evidence for a stable support commitment.
+The [v0.1.0 release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0)
+includes Windows/Linux executables, Python distributions, checksums, and
+build-provenance attestations.
 
-The [v0.1.0 pre-release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0)
-provides the initial Windows/Linux executables and Python distributions.
-Its offline-only validation and unsigned-native-code limitations remain in effect.
-
-| Area | Coverage / limitation |
-|------|-----------------------|
-| Python package | Windows/Linux CI on Python 3.10, 3.13, and 3.15; wheel and source distribution build/metadata checks; isolated wheel-install smoke test. |
-| Windows executable | x86-64 standalone build on `windows-latest`, Python 3.13; all command-help paths, config persistence, and offline SDK imports/auth failures. No MSI/ARM64 build. |
-| Linux executable | x86-64 build on Ubuntu 22.04, Python 3.13; same black-box checks. Targets glibc 2.35+. No Alpine/musl, ARM64, or macOS binary support. Other Linux distributions are not individually certified. |
-| Dependencies | `uv.lock` pins resolved inputs/hashes; audits run in CI and weekly. Python-version/platform markers can select different locked versions. Public pip installs still resolve declared ranges. |
-| Code and repository | Ruff, formatting, strict mypy, CodeQL, dependency review, pinned actions, strict documentation-site builds, required PR/check gates, protected linear history. |
-| Azure behavior | Current hardening validation is offline only. Resource provisioning, RBAC, regional/model availability, hosted readiness, inference, uploads, evaluations, and training still need explicitly authorized live validation for the release. |
-| Distribution trust | Tagged builds prepare checksums and GitHub build-provenance attestations. No native code-signing certificate or package-manager/PyPI publishing is configured. |
+| Distribution | Platform | Python |
+|--------------|----------|--------|
+| Python package | Windows and Linux | Requires 3.10+; CI covers 3.10, 3.13, and 3.15. |
+| Windows executable | Windows x86-64 | Bundled Python 3.13. |
+| Linux executable | Linux x86-64, glibc 2.35+; built on Ubuntu 22.04 | Bundled Python 3.13. |
 
 Linux binaries need a writable/executable temporary location for PyInstaller's
 one-file extraction, the relevant glibc runtime, and system CA trust.
-Checks on Ubuntu do not establish compatibility with every glibc distribution.
 Use the Python package where a standalone target is unsupported.
+
+## Build and check policy
+
+The Windows `.exe` is built and tested natively on `windows-latest`; the Linux
+executable is built and tested on Ubuntu 22.04. Both bundle Python 3.13.
+Build each artifact on its target operating system with PyInstaller; these are
+not cross-compiled builds. Source-package CI separately tests Python 3.10,
+3.13, and 3.15 on Windows and Linux.
+
+Documentation-only changes run documentation and security checks without
+rebuilding either executable or the Python distributions. Their aggregate
+`Required CI` and `Required executables` checks still report after verifying
+the changed paths. To generate executable artifacts, use a full build.
+Mixed changes, CI/build-tooling changes, unavailable diffs, release tags,
+and manual workflow runs retain full validation.
+See the [contributor policy](https://github.com/georgeollis/fdry/blob/main/CONTRIBUTING.md#pull-requests-and-repository-checks)
+for the documentation allowlist.
+
+For a docs-only commit being considered for release, manually run the
+**Executables** workflow on the reviewed branch before tagging, then inspect
+both platform artifacts and results. Do not remove protection or ignore failed
+tests to obtain a passing release gate. Manual runs upload artifacts but do not
+create a GitHub release; a matching version tag creates a draft.
 
 ## Before tagging a release
 
-1. Review changes, dependency/audit results, compatibility, licenses of bundled
-   dependencies, and outstanding CodeQL findings. Do not bypass failing gates
-   or publish with unresolved material findings.
+1. Review changes, dependency audits, bundled licenses, and CodeQL results.
 2. Verify `Required CI`, `Required executables`, `CodeQL analysis`, and `Documentation site` for the
    exact commit on `main`. Check both executable artifacts and isolated wheel
    installation, not only editable-source tests. The release PR must also pass
    `Dependency review`.
-3. Run separately authorized Azure integration tests against representative
-   projects/models and permissions. Include failure/cleanup behavior. Record
-   sanitized evidence, supported regions/models/APIs, costs, and any exclusions.
-   Never start billable tests as an implicit CI/release step.
-4. Verify the supported-platform matrix and evaluate signing/distribution
-   requirements for the intended production audience. Unsigned native builds
-   and unverified live paths must remain explicit release limitations.
-5. Update `src\fdry\__init__.py`, package classifiers when justified, release
-   notes, and docs through a passing PR. Use a SemVer version and a matching
-   `v<VERSION>` tag. Do not mark the first version stable merely because CI passes.
+3. Update `src\fdry\__init__.py`, release notes, and documentation through a
+   passing PR. Use a SemVer version and a matching `v<VERSION>` tag.
 
 ## Tagged build and draft review
 
@@ -64,15 +67,10 @@ The workflow creates a **draft**, not a public release, containing:
 | `SHA256SUMS` | SHA-256 hashes for the executables and Python distributions. |
 | `LICENSE` | Project MIT license; bundled dependencies retain their own licenses. |
 
-Review the workflow identity/commit and all artifacts before publishing the
-draft. Confirm version output, platform behavior, hash entries, and provenance.
-No stable release is automatically published to GitHub or PyPI.
-Rerunning a tag does not authorize replacing an existing release; resolve a
-failed draft deliberately and never silently overwrite published assets/tags.
-
-The lock makes dependency selection reviewable and repeatable. OS images,
-Python patch versions, build timestamps, and native tooling are not fully
-hermetic; byte-for-byte reproducibility is not claimed.
+Review the workflow identity, commit, version output, checksums, and provenance
+before publishing the draft. Publishing is a separate maintainer action. Existing tags
+and published assets must not be overwritten. PyPI publishing is separate
+from this workflow.
 
 ## Consumer verification
 
@@ -99,5 +97,4 @@ gh attestation verify .\fdry-windows-x64.exe --repo georgeollis/fdry
 
 Use the corresponding Linux filename when verifying that asset. Check that the
 attestation identifies this repository's expected release workflow and commit.
-Attestations establish an artifact's build identity, not its functional safety,
-Azure compatibility, or a Windows code-signing trust chain.
+Build-provenance attestations are separate from Windows Authenticode signatures.

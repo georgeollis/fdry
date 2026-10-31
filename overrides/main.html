@@ -1,33 +1,30 @@
 {% extends "base.html" %}
 
 {% block site_meta %}
-{{ super() }}
-<meta name="theme-color" content="#111019">
-<link rel="icon" type="image/svg+xml" href="{{ 'assets/mark.svg'|url }}">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="{{ config.site_description }}">
+{% if page and page.canonical_url %}<link rel="canonical" href="{{ page.canonical_url }}">{% endif %}
+<link rel="icon" href="data:,">
+<meta name="theme-color" content="#ffffff">
 {% endblock %}
 
 {% block site_name %}
-<a class="navbar-brand fd-brand" href="{{ nav.homepage.url|url }}" aria-label="fdry home">
-  <img src="{{ 'assets/mark.svg'|url }}" width="30" height="30" alt="">
-  <span>fdry<span class="fd-brand-dot">.</span></span>
-  <span class="fd-brand-label">FOUNDRY CLI</span>
-</a>
+<a class="fd-skip" href="#main-content">Skip to content</a>
+<a class="navbar-brand fd-brand" href="{{ nav.homepage.url|url }}">fdry</a>
+<span class="fd-header-label">Documentation</span>
 {% endblock %}
 
 {% block site_nav %}
-<ul class="nav navbar-nav fd-primary-nav">
-  {% for item in nav if item.is_page %}
-  <li class="nav-item">
-    <a class="nav-link{% if item.active %} active{% endif %}" href="{{ item.url|url }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.title }}</a>
-  </li>
-  {% endfor %}
+<ul class="nav navbar-nav">
+  <li class="nav-item"><a class="nav-link" href="{{ config.repo_url }}/releases">Downloads</a></li>
 </ul>
 {% endblock %}
 
 {% block search_button %}
 <li class="nav-item">
   <button class="nav-link fd-search-button" type="button" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
-    <i class="fa fa-search" aria-hidden="true"></i> <span>Search docs</span> <kbd>Ctrl K</kbd>
+    Search documentation <kbd>Ctrl K</kbd>
   </button>
 </li>
 {% endblock %}
@@ -35,45 +32,59 @@
 {% block next_prev %}{% endblock %}
 
 {% block repo %}
-<li class="nav-item">
-  <a class="nav-link fd-repo" href="{{ config.repo_url }}" aria-label="fdry on GitHub"><i class="fa-brands fa-github" aria-hidden="true"></i><span class="d-lg-none ms-2">GitHub</span></a>
-</li>
+<li class="nav-item"><a class="nav-link" href="{{ config.repo_url }}">GitHub</a></li>
 {% endblock %}
 
 {% block content %}
-<a class="fd-skip" href="#main-content">Skip to content</a>
-{% if page and page.is_homepage %}
-<main class="col-12 fd-home" id="main-content" tabindex="-1">
-  {% include "partials/hero.html" %}
-  <div class="fd-quickstart">
-    <div class="fd-section-intro">
-      <h2>Install and configure</h2>
-      <p>Install the Python package or download an executable, then configure a project endpoint.</p>
-      <a href="{{ 'cli/'|url }}">Configuration reference <span aria-hidden="true">&rarr;</span></a>
-    </div>
-    <div class="fd-quickstart-content">{{ page.content }}</div>
-  </div>
-</main>
-{% else %}
-<aside class="col-md-3 fd-sidebar" aria-label="On this page">
-  <p class="fd-eyebrow">ON THIS PAGE</p>
-  {% include "toc.html" %}
-  <a class="fd-sidebar-source" href="{{ page.edit_url }}"><i class="fa-brands fa-github" aria-hidden="true"></i> Improve this page <span aria-hidden="true">&nearr;</span></a>
-</aside>
-<main class="col-md-9 fd-article" id="main-content" tabindex="-1">
-  <div class="fd-breadcrumb"><a href="{{ nav.homepage.url|url }}">fdry</a><span aria-hidden="true">/</span><span>{{ page.title }}</span></div>
-  {% include "content.html" %}
-  <nav class="fd-page-nav" aria-label="Documentation pages">
-    {% if page.previous_page %}<a href="{{ page.previous_page.url|url }}"><span>PREVIOUS</span>{{ page.previous_page.title }} <span aria-hidden="true">&larr;</span></a>{% endif %}
-    {% if page.next_page %}<a href="{{ page.next_page.url|url }}"><span>NEXT</span>{{ page.next_page.title }} <span aria-hidden="true">&rarr;</span></a>{% endif %}
-  </nav>
-</main>
-{% endif %}
+<div class="col-12 fd-docs">
+  <aside class="fd-navigation" aria-label="Documentation navigation">
+    <div class="fd-nav-heading"><span>fdry</span><a href="{{ config.repo_url }}/releases/tag/v0.1.0">v0.1.0</a></div>
+    <button class="fd-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#fd-docs-nav" aria-controls="fd-docs-nav" aria-expanded="false">Documentation menu <span aria-hidden="true">+</span></button>
+    <nav id="fd-docs-nav" class="collapse">
+      <p class="fd-nav-group">Documentation</p>
+      <ul class="fd-nav-list">
+        {% for item in nav if item.is_page %}
+        <li><a href="{{ item.url|url }}"{% if item.active %} class="active" aria-current="page"{% endif %}>{{ item.title }}</a></li>
+        {% endfor %}
+      </ul>
+      <p class="fd-nav-group">Command groups</p>
+      <ul class="fd-nav-list fd-command-links">
+        <li><a href="{{ 'cli/#accounts-and-projects'|url }}">Accounts and projects</a></li>
+        <li><a href="{{ 'cli/#agents'|url }}">Agents</a></li>
+        <li><a href="{{ 'cli/#models'|url }}">Models</a></li>
+        <li><a href="{{ 'cli/#connections-and-toolboxes'|url }}">Connections and toolboxes</a></li>
+        <li><a href="{{ 'cli/#datasets-and-indexes'|url }}">Datasets and indexes</a></li>
+        <li><a href="{{ 'cli/#evaluations'|url }}">Evaluations</a></li>
+        <li><a href="{{ 'cli/#fine-tuning-and-files'|url }}">Fine-tuning and files</a></li>
+        <li><a href="{{ 'cli/#configuration-authentication-quota-and-rest'|url }}">Configuration and utilities</a></li>
+      </ul>
+      <p class="fd-nav-group">Project</p>
+      <ul class="fd-nav-list">
+        {% for item in nav if not item.is_page %}<li><a href="{{ item.url|url }}">{{ item.title }}</a></li>{% endfor %}
+        <li><a href="{{ config.repo_url }}/issues">Report an issue</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main class="fd-article" id="main-content" tabindex="-1">
+    <div class="fd-breadcrumb"><a href="{{ nav.homepage.url|url }}">Documentation</a><span aria-hidden="true">/</span><span>{{ page.title }}</span></div>
+    <details class="fd-mobile-toc"><summary>On this page</summary>{% include "partials/contents.html" %}</details>
+    {% include "content.html" %}
+    <div class="fd-page-source"><a href="{{ page.edit_url }}">Edit this page on GitHub</a></div>
+    <nav class="fd-page-nav" aria-label="Documentation pages">
+      {% if page.previous_page %}<a rel="prev" href="{{ page.previous_page.url|url }}"><span>Previous</span>{{ page.previous_page.title }}</a>{% endif %}
+      {% if page.next_page %}<a rel="next" href="{{ page.next_page.url|url }}"><span>Next</span>{{ page.next_page.title }}</a>{% endif %}
+    </nav>
+  </main>
+  <aside class="fd-toc" aria-label="On this page">
+    <p>On this page</p>
+    <div class="bs-sidebar">{% include "partials/contents.html" %}</div>
+  </aside>
+</div>
 {% endblock %}
 
 {% block footer %}
 <div class="container fd-footer">
-  <div><a class="fd-footer-brand" href="{{ nav.homepage.url|url }}">fdry<span>.</span></a><p>Python 3.10+ / Windows and Linux.</p><p class="fd-disclaimer">Independent community project. Not an official Microsoft product.</p></div>
-  <nav aria-label="Footer"><a href="{{ config.repo_url }}">GitHub</a><a href="{{ config.repo_url }}/blob/main/CONTRIBUTING.md">Contribute</a><a href="{{ config.repo_url }}/blob/main/SECURITY.md">Security</a><a href="{{ config.repo_url }}/blob/main/LICENSE">MIT license</a><a href="https://www.mkdocs.org/">Built with MkDocs</a></nav>
+  <p>Independent community project. Not an official Microsoft product.</p>
+  <nav aria-label="Footer"><a href="{{ config.repo_url }}/blob/main/CONTRIBUTING.md">Contributing</a><a href="{{ config.repo_url }}/blob/main/SECURITY.md">Security</a><a href="{{ config.repo_url }}/blob/main/LICENSE">MIT license</a><a href="https://www.mkdocs.org/">MkDocs</a></nav>
 </div>
 {% endblock %}

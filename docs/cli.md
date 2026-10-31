@@ -1,7 +1,6 @@
 # CLI reference
 
-`fdry` is an independent CLI for Microsoft Foundry, not a Microsoft product.
-This reference covers all implemented commands and CLI values. Azure resource
+This reference covers `fdry` commands and CLI values. Azure resource
 names, model catalogs, regions, SKUs, protocol versions, and request-body
 subtypes are service-defined, not fixed enumerations maintained by `fdry`.
 See [request bodies](request-bodies.md) for YAML/JSON fields and source schemas.
@@ -63,10 +62,6 @@ Effective settings resolve as **global flag > environment variable > saved profi
 | `FDRY_CONFIG` | Config-file path; otherwise `~/.fdry/config.json`. Use an absolute path for portability. |
 | `FDRY_EXE` | Developer-only path to a built standalone executable; enables binary tests. Not a runtime CLI setting. |
 
-The renamed CLI does not read legacy `FOUNDRYCTL_*` variables or
-`~/.foundryctl/config.json`. Existing users must copy their non-secret profile
-data to the new location and update scripts.
-
 ```powershell
 fdry --profile "<PROFILE>" config set endpoint "https://<ACCOUNT>.services.ai.azure.com/api/projects/<PROJECT>"
 fdry --profile "<PROFILE>" config set subscription "<SUBSCRIPTION_ID>"
@@ -109,8 +104,7 @@ for the complete SDK-owned credential chain and its environment values.
 
 `auth status` acquires a token for `https://ai.azure.com/.default` and prints
 `authenticated` and the Unix timestamp `expires_on`, never the token.
-It does not prove access to a particular project or management operation.
-Assign the appropriate Azure RBAC permissions separately.
+Project and management operations require the appropriate Azure RBAC roles.
 
 | Command family | Required settings |
 |----------------|-------------------|

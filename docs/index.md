@@ -1,6 +1,16 @@
 ---
-title: fdry - Microsoft Foundry CLI
+title: Overview
 ---
+
+# fdry documentation
+
+fdry is an independent command-line interface for Microsoft Foundry.
+Use it to manage agents, model deployments, projects, and related resources.
+Commands return JSON, YAML, or table output and use Azure Identity credentials.
+
+The [CLI reference](cli.md) covers commands and options. The
+[request-body guide](request-bodies.md) documents YAML/JSON examples and
+how to add properties.
 
 ## Install
 
@@ -13,10 +23,10 @@ fdry --help
 fdry --version
 ```
 
-The package is not published to PyPI yet. Windows x64 and Linux x64 standalone
+The package is not published to PyPI. Windows x64 and Linux x64 standalone
 builds bundle Python, so users of those builds do not need a Python installation.
 Download binaries, Python wheel/source archives, and checksums from the
-[v0.1.0 pre-release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0).
+[v0.1.0 release](https://github.com/georgeollis/fdry/releases/tag/v0.1.0).
 Verify checksums/provenance before running downloaded files.
 See [platform requirements and verification](releasing.md#consumer-verification).
 
@@ -56,14 +66,8 @@ command. JSON output is the default.
 | [CLI reference](cli.md) | Every command, option, accepted CLI choice, default, and setting. |
 | [Request bodies](request-bodies.md) | Every bundled YAML/JSON field, its meaning, and authoritative source schemas. |
 | [Adding properties](request-bodies.md#adding-properties-to-a-request-file) | Extend a template, choose nesting/types, and distinguish schema-defined properties from free-form keys. |
-| [Release readiness](releasing.md) | Platform support, verification, release gates, and unverified live behavior. |
+| [Releases](releasing.md) | Supported platforms, builds, checksums, and provenance verification. |
 
 Requests can create resources, modify data, and incur Azure charges.
 There is no dry-run mode. Keep credentials and private prompts outside source
 control, and review outputs before sharing them.
-
-!!! note "Pre-release limitations"
-    fdry is an open-source community CLI for Microsoft Foundry, not an official
-    Microsoft product. The initial release remains alpha. Offline testing and
-    build hardening do not establish live Azure compatibility; native binaries
-    are unsigned. See [release readiness](releasing.md) for the assurance boundary.
