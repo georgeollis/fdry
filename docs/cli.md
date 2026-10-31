@@ -4,6 +4,8 @@ This reference covers `fdry` commands and CLI values. Azure resource
 names, model catalogs, regions, SKUs, protocol versions, and request-body
 subtypes are service-defined, not fixed enumerations maintained by `fdry`.
 See [request bodies](request-bodies.md) for YAML/JSON fields and source schemas.
+For complete tasks with prerequisites and verification steps, use the
+[workflow examples](workflows.md).
 
 ## Syntax and help
 
